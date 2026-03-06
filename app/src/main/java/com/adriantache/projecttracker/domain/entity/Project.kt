@@ -17,8 +17,7 @@ data class Project(
     fun setName(name: String) = this.copy(name = name)
     fun setDescription(description: String) = this.copy(description = description)
     fun addTask(task: Task) = this.copy(tasks = this.tasks + task.toPair())
-    fun removeTask(taskId: Task) = this.copy(tasks = this.tasks.toMutableMap().apply { remove(taskId.id) })
+    fun removeTask(taskId: String) = this.copy(tasks = this.tasks.toMutableMap().apply { remove(taskId) })
 
     fun toPair() = Pair(id, this)
 }
-

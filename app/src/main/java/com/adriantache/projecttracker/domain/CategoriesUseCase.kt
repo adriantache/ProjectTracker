@@ -1,5 +1,6 @@
 package com.adriantache.projecttracker.domain
 
+import android.util.Log
 import com.adriantache.projecttracker.domain.data.ProjectsRepositoryInterface
 import com.adriantache.projecttracker.domain.entity.Project
 import com.adriantache.projecttracker.domain.state.ProjectState
@@ -34,7 +35,9 @@ class CategoriesUseCase(
     }
 
     private suspend fun onRefresh() {
-        projects = repository.getProjects()
+        repository.getProjects()
+            .onSuccess { projects = it }
+            .onFailure { Log.e("CategoriesUseCase", "Error refreshing projects", it) }
     }
 
     private fun showCategories() {
@@ -81,6 +84,7 @@ class CategoriesUseCase(
                 scope.launch {
                     val newProject = project.copy(tasks = project.tasks + it)
                     repository.saveProject(newProject)
+                        .onFailure { Log.e("CategoriesUseCase", "Error adding task", it) }
 
                     onRefreshProject(projectId)
                 }
@@ -89,6 +93,7 @@ class CategoriesUseCase(
                 scope.launch {
                     val newProject = project.copy(tasks = project.tasks - it)
                     repository.saveProject(newProject)
+                        .onFailure { Log.e("CategoriesUseCase", "Error deleting task", it) }
 
                     onRefreshProject(projectId)
                 }
@@ -99,6 +104,7 @@ class CategoriesUseCase(
                         this[id] = requireNotNull(this[id]).copy(isDone = done)
                     })
                     repository.saveProject(newProject)
+                        .onFailure { Log.e("CategoriesUseCase", "Error marking task as done", it) }
 
                     onRefreshProject(projectId)
                 }
@@ -119,6 +125,7 @@ class CategoriesUseCase(
         scope.launch {
             projects.filter { it.category.id == categoryId }.forEach {
                 repository.deleteProject(it.id)
+                    .onFailure { Log.e("CategoriesUseCase", "Error deleting project", it) }
             }
             onRefresh()
             showCategories()
@@ -128,6 +135,7 @@ class CategoriesUseCase(
     private fun onAddProject(project: Project) {
         scope.launch {
             repository.saveProject(project)
+                .onFailure { Log.e("CategoriesUseCase", "Error adding project", it) }
             onRefresh()
             onCategorySelected(project.category.id)
         }
@@ -135,10 +143,10 @@ class CategoriesUseCase(
 
     private fun onDeleteProject(projectId: String) {
         scope.launch {
-            val project = projects.first { it.id == projectId }
             repository.deleteProject(projectId)
+                .onFailure { Log.e("CategoriesUseCase", "Error deleting project", it) }
             onRefresh()
-            onCategorySelected(project.category.id)
+            onCategorySelected(projects.first { it.id == projectId }.category.id)
         }
     }
 }
