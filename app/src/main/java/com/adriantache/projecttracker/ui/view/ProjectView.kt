@@ -75,9 +75,9 @@ import com.adriantache.projecttracker.ui.theme.TextMuted
 fun ProjectView(
     modifier: Modifier = Modifier,
     project: ProjectUi,
-    onBackClick: () -> Unit = {},
-    onAddTask: (String, String) -> Unit = { _, _ -> },
-    onTaskToggle: (String) -> Unit = {},
+    onBackClick: () -> Unit,
+    onAddTask: (String, String) -> Unit,
+    onTaskToggle: (String) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var isAddingTask by remember { mutableStateOf(false) }
@@ -431,6 +431,7 @@ fun ProjectViewPreview() {
         name = "Deep Learning Research",
         description = "A comprehensive study on transformer architectures and their efficiency in edge computing environments. This includes testing various quantization methods and pruning strategies.",
         tasksText = "3/8",
+        categoryName = "category",
         tasks = listOf(
             TaskUi("1", "Literature Review", "Read key papers on BERT and GPT-3", true),
             TaskUi("2", "Setup Environment", "Configure CUDA and PyTorch on server", true),
@@ -444,6 +445,11 @@ fun ProjectViewPreview() {
     )
 
     ProjectTrackerTheme {
-        ProjectView(project = sampleProject)
+        ProjectView(
+            project = sampleProject,
+            onBackClick = {},
+            onAddTask = { _, _ -> },
+            onTaskToggle = {}
+        )
     }
 }

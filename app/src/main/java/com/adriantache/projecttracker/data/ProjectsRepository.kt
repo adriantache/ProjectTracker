@@ -5,26 +5,24 @@ import com.adriantache.projecttracker.data.local.LocalDataSource
 import com.adriantache.projecttracker.data.remote.RemoteDataSource
 import com.adriantache.projecttracker.domain.data.ProjectsRepositoryInterface
 import com.adriantache.projecttracker.domain.entity.Project
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
 // TODO: improve error handling
-class ProjectsRepository(
+class ProjectsRepository @Inject constructor(
     private val localDataSource: LocalDataSource,
     private val remoteDataSource: RemoteDataSource,
 ) : ProjectsRepositoryInterface {
-    override suspend fun getProjects(fromRemote: Boolean): Result<List<Project>> {
-        if (fromRemote) {
-            remoteDataSource.getProjects()
-                .onSuccess { remoteProjects ->
-                    remoteProjects.forEach {
-                        localDataSource.saveProject(it)
-                    }
-                }.onFailure {
-                    Log.e("ProjectsRepository", "Error fetching projects from remote", it)
-                }
-        }
+    override fun getProjectsFlow(): Flow<List<Project>> =
+        localDataSource.getProjectsFlow()
 
-        return localDataSource.getProjects()
-    }
+    override suspend fun fetchProjects(): Result<Unit> =
+        remoteDataSource.getProjects()
+            .onSuccess { remoteProjects ->
+                remoteProjects.forEach {
+                    localDataSource.saveProject(it)
+                }
+            }.map { } // Convert Result<List<Project>> to Result<Unit>
 
     override suspend fun saveProject(newProject: Project): Result<Unit> =
         localDataSource.saveProject(newProject)

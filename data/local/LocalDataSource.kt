@@ -19,17 +19,16 @@ class LocalDataSource @Inject constructor(
             list.map { it.toProject() }
         }
 
-    override suspend fun getProjects(): Result<List<Project>> = error("Use getProjectsFlow instead.")
+    override suspend fun getProjects(): Result<List<Project>> = runCatching {
+        projectDao.getProjectsWithTasks().map { it.toProject() }
+    }
 
     override suspend fun saveProject(newProject: Project): Result<Unit> = runCatching {
-        val newCategory = newProject.category.toEntity()
+        categoryDao.insertCategory(newProject.category.toEntity())
 
-        categoryDao.upsertCategory(newCategory)
-
-        projectDao.upsertProject(newProject.toEntity())
-        
+        projectDao.insertProject(newProject.toEntity())
         newProject.tasks.values.forEach { task ->
-            taskDao.upsertTask(task.toEntity(newProject.id))
+            taskDao.insertTask(task.toEntity(newProject.id))
         }
     }
 

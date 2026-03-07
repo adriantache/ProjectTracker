@@ -9,13 +9,17 @@ sealed interface ProjectState {
     data object Loading : ProjectState
     data class CategoryView(
         val categories: List<Category>,
+        val projectCounts: Map<String, Int>,
         val onCategorySelected: (String) -> Unit,
         val onDeleteCategory: (String) -> Unit,
         val onRefresh: () -> Unit,
+        val onAddProject: (Project) -> Unit,
     ) : ProjectState
 
     data class ProjectsView(
+        val category: Category,
         val projects: List<Project>,
+        val categories: List<Category>,
         val onProjectSelected: (String) -> Unit,
         val onAddProject: (Project) -> Unit,
         val onDeleteProject: (String) -> Unit,
@@ -24,7 +28,7 @@ sealed interface ProjectState {
     ) : ProjectState
 
     data class TasksView(
-        val tasks: List<Task>,
+        val project: Project,
         val onAddTask: (Task) -> Unit,
         val onDeleteTask: (String) -> Unit,
         val onBack: () -> Unit,

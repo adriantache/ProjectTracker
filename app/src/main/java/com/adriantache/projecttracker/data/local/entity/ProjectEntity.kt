@@ -29,6 +29,11 @@ data class ProjectEntity(
 data class ProjectWithTasks(
     @Embedded val project: ProjectEntity,
     @Relation(
+        parentColumn = "categoryId",
+        entityColumn = "id"
+    )
+    val category: CategoryEntity,
+    @Relation(
         parentColumn = "id",
         entityColumn = "projectId"
     )

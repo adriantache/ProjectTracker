@@ -1,105 +1,209 @@
 package com.adriantache.projecttracker.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavType
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.adriantache.projecttracker.ui.model.CategoryUi
-import com.adriantache.projecttracker.ui.model.ProjectUi
-import com.adriantache.projecttracker.ui.model.TaskUi
+import com.adriantache.projecttracker.domain.entity.Project
+import com.adriantache.projecttracker.domain.entity.Task
+import com.adriantache.projecttracker.domain.state.ProjectState
+import com.adriantache.projecttracker.ui.ProjectsViewModel
+import com.adriantache.projecttracker.ui.model.toUi
 import com.adriantache.projecttracker.ui.view.CategoriesView
+import com.adriantache.projecttracker.ui.view.ErrorView
+import com.adriantache.projecttracker.ui.view.LoadingView
 import com.adriantache.projecttracker.ui.view.ProjectView
 import com.adriantache.projecttracker.ui.view.ProjectsView
 
 sealed class Screen(val route: String) {
-    object Categories : Screen("categories")
-    object Projects : Screen("projects/{categoryId}") {
-        fun createRoute(categoryId: String) = "projects/$categoryId"
-    }
-
-    object ProjectDetails : Screen("project/{projectId}") {
-        fun createRoute(projectId: String) = "project/$projectId"
-    }
+    data object Categories : Screen("categories")
+    data object Projects : Screen("projects")
+    data object ProjectDetails : Screen("project")
 }
 
 @Composable
-fun ProjectNavigation() {
+fun ProjectNavigation(
+    modifier: Modifier = Modifier,
+    viewModel: ProjectsViewModel = hiltViewModel(),
+) {
     val navController = rememberNavController()
+    val state by viewModel.state.collectAsState()
 
-    // Mock data for now, would typically come from a ViewModel
-    val sampleCategories = List(5) { i ->
-        val index = i + 1
-        CategoryUi(
-            id = index.toString(),
-            name = "Category $index",
-            description = "Description for category $index",
-            numProjects = index * 3,
-        )
-    }
-
-    val sampleProjects = List(15) { i ->
-        val index = i + 1
-        ProjectUi(
-            id = index.toString(),
-            name = "Project $index",
-            description = "Description for project $index",
-            tasksText = "$index/20",
-            tasks = listOf(
-                TaskUi("1", "Task 1", "Description for task 1", true),
-                TaskUi("2", "Task 2", "Description for task 2", false),
-            )
-        )
+    // Handle initial state trigger
+    if (state is ProjectState.Init) {
+        LaunchedEffect(state) {
+            (state as ProjectState.Init).onInit()
+        }
     }
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Categories.route
+        startDestination = Screen.Categories.route,
+        modifier = modifier
     ) {
         composable(Screen.Categories.route) {
-            CategoriesView(
-                categories = sampleCategories,
-                onCategoryClick = { categoryId ->
-                    navController.navigate(Screen.Projects.createRoute(categoryId))
+            when (val currentState = state) {
+                is ProjectState.Init, ProjectState.Loading -> LoadingView()
+
+                is ProjectState.CategoryView -> {
+                    CategoriesView(
+                        categories = currentState.categories.map {
+                            it.toUi(currentState.projectCounts[it.id] ?: 0)
+                        },
+                        allCategories = currentState.categories,
+                        onAddProject = { name, description, category ->
+                            currentState.onAddProject(
+                                Project(
+                                    name = name,
+                                    description = description,
+                                    category = category
+                                )
+                            )
+                        },
+                        onCategoryClick = { categoryId ->
+                            currentState.onCategorySelected(categoryId)
+                        },
+                        onDeleteCategory = { categoryId ->
+                            currentState.onDeleteCategory(categoryId)
+                        },
+                    )
                 }
-            )
-        }
 
-        composable(
-            route = Screen.Projects.route,
-            arguments = listOf(navArgument("categoryId") { type = NavType.StringType })
-        ) {
-            ProjectsView(
-                projects = sampleProjects,
-                onBackClick = { navController.popBackStack() },
-                onAddProject = { name, description ->
-                    // Logic to add project
-                },
-                onProjectClick = { projectId ->
-                    navController.navigate(Screen.ProjectDetails.createRoute(projectId))
-                }
-            )
-        }
+                is ProjectState.Error -> ErrorView(currentState.message)
 
-        composable(
-            route = Screen.ProjectDetails.route,
-            arguments = listOf(navArgument("projectId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val projectId = backStackEntry.arguments?.getString("projectId")
-            val project = sampleProjects.find { it.id == projectId }
-
-            if (project != null) {
-                ProjectView(
-                    project = project,
-                    onBackClick = { navController.popBackStack() },
-                    onAddTask = { title, description ->
-                        // Logic to add task
-                    },
-                    onTaskToggle = { taskId ->
-                        // Logic to toggle task
+                is ProjectState.ProjectsView -> {
+                    LaunchedEffect(Unit) {
+                        if (navController.currentDestination?.route != Screen.Projects.route) {
+                            navController.navigate(Screen.Projects.route)
+                        }
                     }
-                )
+                }
+
+                is ProjectState.TasksView -> {
+                    LaunchedEffect(Unit) {
+                        if (navController.currentDestination?.route != Screen.ProjectDetails.route) {
+                            navController.navigate(Screen.ProjectDetails.route)
+                        }
+                    }
+                }
+            }
+        }
+
+        composable(Screen.Projects.route) {
+            val currentState = state
+
+            // Sync system back button with UseCase state
+            BackHandler {
+                if (currentState is ProjectState.ProjectsView) {
+                    currentState.onBack()
+                }
+                navController.popBackStack()
+            }
+
+            when (currentState) {
+                is ProjectState.ProjectsView -> {
+                    ProjectsView(
+                        category = currentState.category,
+                        projects = currentState.projects.map { it.toUi() },
+                        allCategories = currentState.categories,
+                        onBackClick = {
+                            currentState.onBack()
+                            navController.popBackStack()
+                        },
+                        onAddProject = { name, description, category ->
+                            currentState.onAddProject(
+                                Project(
+                                    name = name,
+                                    description = description,
+                                    category = category
+                                )
+                            )
+                        },
+                        onProjectClick = { projectId ->
+                            currentState.onProjectSelected(projectId)
+                        },
+                        onDeleteProject = { projectId ->
+                            currentState.onDeleteProject(projectId)
+                        },
+                    )
+                }
+
+                ProjectState.Loading -> LoadingView()
+
+                is ProjectState.Error -> ErrorView(currentState.message)
+
+                is ProjectState.CategoryView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Categories.route, false)
+                    }
+                }
+
+                is ProjectState.TasksView -> {
+                    LaunchedEffect(Unit) {
+                        if (navController.currentDestination?.route != Screen.ProjectDetails.route) {
+                            navController.navigate(Screen.ProjectDetails.route)
+                        }
+                    }
+                }
+
+                is ProjectState.Init -> LaunchedEffect(Unit) {
+                    navController.popBackStack(Screen.Categories.route, false)
+                }
+            }
+        }
+
+        composable(Screen.ProjectDetails.route) {
+            val currentState = state
+
+            // Sync system back button with UseCase state
+            BackHandler {
+                if (currentState is ProjectState.TasksView) {
+                    currentState.onBack()
+                }
+                navController.popBackStack()
+            }
+
+            when (currentState) {
+                is ProjectState.TasksView -> {
+                    ProjectView(
+                        project = currentState.project.toUi(),
+                        onBackClick = {
+                            currentState.onBack()
+                            navController.popBackStack()
+                        },
+                        onTaskToggle = { taskId ->
+                            val task = currentState.project.tasks[taskId]
+                            if (task != null) {
+                                currentState.onMarkTaskAsDone(taskId, !task.isDone)
+                            }
+                        },
+                        onAddTask = { title, description ->
+                            currentState.onAddTask(Task(title = title, description = description))
+                        }
+                    )
+                }
+
+                ProjectState.Loading -> LoadingView()
+
+                is ProjectState.Error -> ErrorView(currentState.message)
+
+                is ProjectState.ProjectsView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Projects.route, false)
+                    }
+                }
+
+                is ProjectState.CategoryView, is ProjectState.Init -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Categories.route, false)
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.adriantache.projecttracker.data.local
 
+import com.adriantache.projecttracker.data.local.entity.CategoryEntity
 import com.adriantache.projecttracker.data.local.entity.ProjectEntity
 import com.adriantache.projecttracker.data.local.entity.ProjectWithTasks
 import com.adriantache.projecttracker.data.local.entity.TaskEntity
@@ -14,14 +15,23 @@ fun Project.toEntity() = ProjectEntity(
     categoryId = category.id,
 )
 
-// This is a placeholder until we have a proper way to get a category from an id.
-private val placeholderCategory = Category.All
+fun Category.toEntity() = CategoryEntity(
+    id = id,
+    name = name,
+    description = description,
+)
+
+fun CategoryEntity.toCategory() = Category(
+    id = id,
+    name = name,
+    description = description,
+)
 
 fun ProjectWithTasks.toProject() = Project(
     id = project.id,
     name = project.name,
     description = project.description,
-    category = placeholderCategory,
+    category = category.toCategory(),
     tasks = tasks.map { it.toTask() }.associateBy { it.id },
 )
 
