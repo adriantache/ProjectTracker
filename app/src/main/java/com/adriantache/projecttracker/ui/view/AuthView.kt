@@ -19,7 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.adriantache.projecttracker.ui.AuthViewModel
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.InterFamily
@@ -43,39 +45,24 @@ import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 @Composable
 fun AuthView(
     modifier: Modifier = Modifier,
+    viewModel: AuthViewModel = hiltViewModel(),
     content: @Composable () -> Unit,
 ) {
-    val auth = remember { Firebase.auth }
-    var currentUser by remember { mutableStateOf(auth.currentUser) }
-
-    DisposableEffect(auth) {
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            currentUser = firebaseAuth.currentUser
-        }
-        auth.addAuthStateListener(listener)
-        onDispose {
-            auth.removeAuthStateListener(listener)
-        }
-    }
+    val currentUser by viewModel.currentUser.collectAsState()
 
     Surface(
         modifier = modifier.fillMaxSize(),
         color = BackgroundDark
     ) {
         if (currentUser == null) {
-            AuthContent(auth = auth) { user ->
-                currentUser = user
-            }
+            AuthContent(auth = viewModel.auth)
         } else {
             content()
         }
@@ -86,7 +73,6 @@ fun AuthView(
 private fun AuthContent(
     modifier: Modifier = Modifier,
     auth: FirebaseAuth,
-    onAuthSuccess: (FirebaseUser?) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -174,12 +160,11 @@ private fun AuthContent(
                                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
 
                                 auth.signInWithCredential(firebaseCredential).addOnCompleteListener { task ->
-                                    if (task.isSuccessful) {
-                                        onAuthSuccess(task.result?.user)
-                                    } else {
+                                    if (!task.isSuccessful) {
                                         errorMessage = task.exception?.message ?: "Firebase authentication failed"
                                         isLoading = false
                                     }
+                                    // Success is handled by AuthViewModel's AuthStateListener
                                 }
                             } else {
                                 errorMessage = "Unexpected credential type received"
