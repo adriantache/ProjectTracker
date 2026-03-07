@@ -1,4 +1,4 @@
-package com.adriantache.projecttracker.ui
+package com.adriantache.projecttracker.ui.viewModel
 
 import androidx.lifecycle.ViewModel
 import com.adriantache.projecttracker.domain.CategoriesUseCase

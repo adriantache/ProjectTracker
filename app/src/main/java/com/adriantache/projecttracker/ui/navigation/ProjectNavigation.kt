@@ -13,13 +13,13 @@ import androidx.navigation.compose.rememberNavController
 import com.adriantache.projecttracker.domain.entity.Project
 import com.adriantache.projecttracker.domain.entity.Task
 import com.adriantache.projecttracker.domain.state.ProjectState
-import com.adriantache.projecttracker.ui.ProjectsViewModel
 import com.adriantache.projecttracker.ui.model.toUi
 import com.adriantache.projecttracker.ui.view.CategoriesView
 import com.adriantache.projecttracker.ui.view.ErrorView
 import com.adriantache.projecttracker.ui.view.LoadingView
 import com.adriantache.projecttracker.ui.view.ProjectView
 import com.adriantache.projecttracker.ui.view.ProjectsView
+import com.adriantache.projecttracker.ui.viewModel.ProjectsViewModel
 
 sealed class Screen(val route: String) {
     data object Categories : Screen("categories")

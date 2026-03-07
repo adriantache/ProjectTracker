@@ -36,13 +36,13 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.adriantache.projecttracker.ui.AuthViewModel
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.InterFamily
 import com.adriantache.projecttracker.ui.theme.PlayfairFamily
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
+import com.adriantache.projecttracker.ui.viewModel.AuthViewModel
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth

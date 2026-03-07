@@ -14,11 +14,13 @@ import com.adriantache.projecttracker.domain.state.ProjectState.TasksView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 class CategoriesUseCase @Inject constructor(
@@ -35,34 +37,47 @@ class CategoriesUseCase @Inject constructor(
         get() = projects.map { it.category }.distinctBy { it.name }.sortedBy { it.name }
 
     private fun onInit() {
+        Log.d("CategoriesUseCase", "onInit triggered")
         state.value = Loading
 
         // Start collecting database changes reactively
         projectsJob?.cancel()
         projectsJob = repository.getProjectsFlow()
             .onEach { newList ->
+                Log.d("CategoriesUseCase", "Database emission: ${newList.size} projects")
                 val oldProjects = projects
                 projects = newList
 
-                // If we are in a view that depends on the project list, update it automatically
+                // Update UI state based on new data
                 updateStateWithNewData(oldProjects, newList)
             }
             .launchIn(scope)
 
-        // Trigger initial remote refresh
+        // Trigger initial remote refresh with a timeout to prevent infinite loading
         scope.launch {
-            repository.fetchProjects()
-                .onFailure {
-                    Log.e("CategoriesUseCase", "Initial remote refresh failed", it)
+            try {
+                withTimeoutOrNull(10_000) {
+                    repository.fetchProjects()
+                        .onFailure {
+                            Log.e("CategoriesUseCase", "Initial remote refresh failed", it)
+                        }
+                } ?: Log.w("CategoriesUseCase", "Initial remote refresh timed out")
+            } finally {
+                // Always ensure we transition out of loading after some time if no data came from DB
+                delay(500) // Give a moment for the DB emission to trigger updateStateWithNewData
+                if (state.value is Loading) {
+                    Log.d("CategoriesUseCase", "Forcing transition from Loading to CategoryView")
+                    showCategories()
                 }
+            }
         }
     }
 
     private fun updateStateWithNewData(oldList: List<Project>, newList: List<Project>) {
         when (val currentState = state.value) {
             is CategoryView -> showCategories()
+
             is ProjectsView -> {
-                // Determine which category was being viewed
                 val categoryId = newList.find { p -> oldList.any { it.id == p.id } }?.category?.id
                     ?: projects.find { it.category.id == currentState.category.id }?.category?.id
                     ?: projects.firstOrNull()?.category?.id
@@ -84,10 +99,9 @@ class CategoriesUseCase @Inject constructor(
                 }
             }
 
-            else -> {
-                if (newList.isNotEmpty() && currentState is Loading) {
-                    showCategories()
-                }
+            is Loading, is ProjectState.Error, is Init -> {
+                // Transition to main view as soon as we have any response from DB
+                showCategories()
             }
         }
     }
@@ -109,6 +123,7 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             state.value = Loading
             repository.fetchProjects()
+            if (state.value is Loading) showCategories()
         }
     }
 
@@ -134,6 +149,7 @@ class CategoriesUseCase @Inject constructor(
                 scope.launch {
                     state.value = Loading
                     repository.fetchProjects()
+                    if (state.value is Loading) onCategorySelected(categoryId)
                 }
             }
         )
@@ -152,7 +168,7 @@ class CategoriesUseCase @Inject constructor(
             onDeleteTask = { taskId -> onDeleteTask(project, taskId) },
             onMarkTaskAsDone = { id, done -> onMarkTaskAsDone(project, id, done) },
             onBack = { onCategorySelected(project.category.id) },
-            onRefresh = { onRefreshProject() },
+            onRefresh = { onRefreshProject(projectId) },
         )
     }
 
@@ -178,10 +194,11 @@ class CategoriesUseCase @Inject constructor(
         }
     }
 
-    private fun onRefreshProject() {
+    private fun onRefreshProject(projectId: String) {
         scope.launch {
             state.value = Loading
             repository.fetchProjects()
+            if (state.value is Loading) onProjectSelected(projectId)
         }
     }
 
@@ -190,6 +207,7 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             val projectsToDelete = projects.filter { it.category.id == categoryId }
             projectsToDelete.forEach { repository.deleteProject(it.id) }
+            if (state.value is Loading) showCategories()
         }
     }
 
