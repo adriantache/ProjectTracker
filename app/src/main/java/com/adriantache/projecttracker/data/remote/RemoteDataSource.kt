@@ -8,13 +8,15 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-class RemoteDataSource @Inject constructor() : DataSource {
-    private val database = FirebaseDatabase.getInstance().reference
-    private val auth = FirebaseAuth.getInstance()
+class RemoteDataSource @Inject constructor(
+    private val database: FirebaseDatabase,
+    private val auth: FirebaseAuth,
+) : DataSource {
+    private val rootRef: DatabaseReference = database.reference
 
     private val userProjectsRef: DatabaseReference
         get() = auth.currentUser?.uid?.let { uid ->
-            database.child("users").child(uid).child("projects")
+            rootRef.child("users").child(uid).child("projects")
         } ?: throw Exception("User not logged in")
 
     override suspend fun getProjects(): Result<List<Project>> = runCatching {
