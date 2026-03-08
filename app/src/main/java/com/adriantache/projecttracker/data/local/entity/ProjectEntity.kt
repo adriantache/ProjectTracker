@@ -24,6 +24,7 @@ data class ProjectEntity(
     val name: String,
     val description: String,
     val categoryId: String,
+    val lastUpdated: Long = 0L,
 )
 
 data class ProjectWithTasks(

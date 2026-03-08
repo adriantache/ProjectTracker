@@ -11,7 +11,7 @@ import com.adriantache.projecttracker.data.local.entity.CategoryEntity
 import com.adriantache.projecttracker.data.local.entity.ProjectEntity
 import com.adriantache.projecttracker.data.local.entity.TaskEntity
 
-@Database(entities = [ProjectEntity::class, CategoryEntity::class, TaskEntity::class], version = 1)
+@Database(entities = [ProjectEntity::class, CategoryEntity::class, TaskEntity::class], version = 3)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun categoryDao(): CategoryDao
@@ -27,7 +27,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "project_tracker_database"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
                 INSTANCE = instance
                 instance
             }

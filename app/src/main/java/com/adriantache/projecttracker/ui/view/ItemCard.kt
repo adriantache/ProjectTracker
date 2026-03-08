@@ -71,7 +71,10 @@ fun ItemCard(
                     fontSize = 28.sp,
                     lineHeight = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextCream
+                    color = TextCream,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = 24.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(

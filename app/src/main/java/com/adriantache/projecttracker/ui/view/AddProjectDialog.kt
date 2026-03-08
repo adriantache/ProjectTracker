@@ -3,6 +3,7 @@ package com.adriantache.projecttracker.ui.view
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,11 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +63,8 @@ import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
+import kotlinx.coroutines.delay
+import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -74,12 +79,24 @@ fun AddProjectDialog(
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull() ?: Category.All) }
     var isAddingNewCategory by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
+    var hasFocusedNewCategory by remember { mutableStateOf(false) }
 
     val focusRequester = remember { FocusRequester() }
+    val categoryFocusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    LaunchedEffect(isAddingNewCategory) {
+        if (isAddingNewCategory) {
+            // Small delay to ensure the field is composed before requesting focus
+            delay(100)
+            categoryFocusRequester.requestFocus()
+        } else {
+            hasFocusedNewCategory = false
+        }
     }
 
     Dialog(
@@ -94,7 +111,13 @@ fun AddProjectDialog(
                 .padding(24.dp)
         ) {
             Column(
-                modifier = Modifier.padding(32.dp)
+                modifier = Modifier
+                    .padding(32.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { focusManager.clearFocus() }
+                    )
             ) {
                 Text(
                     text = "NEW PROJECT",
@@ -109,7 +132,10 @@ fun AddProjectDialog(
 
                 BasicTextField(
                     value = name,
-                    onValueChange = { name = it },
+                    onValueChange = {
+                        name =
+                            it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
@@ -120,7 +146,10 @@ fun AddProjectDialog(
                         color = TextCream
                     ),
                     cursorBrush = SolidColor(AccentTeal),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Next
+                    ),
                     decorationBox = { innerTextField ->
                         if (name.isEmpty()) {
                             Text(
@@ -147,7 +176,10 @@ fun AddProjectDialog(
                         color = TextMuted
                     ),
                     cursorBrush = SolidColor(AccentTeal),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     decorationBox = { innerTextField ->
                         if (description.isEmpty()) {
@@ -205,7 +237,22 @@ fun AddProjectDialog(
                         ) {
                             BasicTextField(
                                 value = newCategoryName,
-                                onValueChange = { newCategoryName = it },
+                                onValueChange = {
+                                    newCategoryName =
+                                        it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() }
+                                },
+                                modifier = Modifier
+                                    .focusRequester(categoryFocusRequester)
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                            hasFocusedNewCategory = true
+                                        } else {
+                                            // Only reset if it was actually focused before and is now empty
+                                            if (hasFocusedNewCategory && newCategoryName.isBlank()) {
+                                                isAddingNewCategory = false
+                                            }
+                                        }
+                                    },
                                 textStyle = TextStyle(
                                     fontFamily = InterFamily,
                                     fontSize = 14.sp,
@@ -213,7 +260,10 @@ fun AddProjectDialog(
                                 ),
                                 cursorBrush = SolidColor(AccentTeal),
                                 singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Sentences,
+                                    imeAction = ImeAction.Done
+                                ),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 decorationBox = { innerTextField ->
                                     if (newCategoryName.isEmpty()) {
@@ -234,7 +284,10 @@ fun AddProjectDialog(
                                 .height(40.dp)
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(SurfaceDark)
-                                .clickable { isAddingNewCategory = true }
+                                .clickable {
+                                    isAddingNewCategory = true
+                                    newCategoryName = ""
+                                }
                                 .padding(horizontal = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {

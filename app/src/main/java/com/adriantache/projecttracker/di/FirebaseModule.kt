@@ -8,6 +8,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+private const val EU_URL = "https://project-tracker-cd9b6-default-rtdb.europe-west1.firebasedatabase.app"
+
 @Module
 @InstallIn(SingletonComponent::class)
 object FirebaseModule {
@@ -15,7 +17,9 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseDatabase(): FirebaseDatabase {
-        return FirebaseDatabase.getInstance()
+        return FirebaseDatabase.getInstance(EU_URL).apply {
+            setPersistenceEnabled(true)
+        }
     }
 
     @Provides

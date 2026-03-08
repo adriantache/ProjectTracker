@@ -8,4 +8,5 @@ data class CategoryEntity(
     @PrimaryKey val id: String,
     val name: String,
     val description: String,
+    val lastUpdated: Long = 0L,
 )

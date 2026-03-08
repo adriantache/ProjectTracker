@@ -2,6 +2,7 @@ package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +27,7 @@ fun MainTopBar(
     title: String,
     scrollBehavior: TopAppBarScrollBehavior? = null,
     onBackClick: (() -> Unit)? = null,
+    onRefresh: (() -> Unit)? = null,
 ) {
     if (scrollBehavior != null) {
         LargeTopAppBar(
@@ -49,12 +51,23 @@ fun MainTopBar(
                     }
                 }
             },
+            actions = {
+                if (onRefresh != null) {
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = TextCream
+                        )
+                    }
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
                 navigationIconContentColor = TextCream,
                 titleContentColor = Color.White,
-                actionIconContentColor = Color.Unspecified
+                actionIconContentColor = TextCream
             ),
             scrollBehavior = scrollBehavior
         )
@@ -68,11 +81,23 @@ fun MainTopBar(
                     fontWeight = FontWeight.Bold
                 )
             },
+            actions = {
+                if (onRefresh != null) {
+                    IconButton(onClick = onRefresh) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = TextCream
+                        )
+                    }
+                }
+            },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
                 titleContentColor = Color.White,
-                navigationIconContentColor = TextCream
+                navigationIconContentColor = TextCream,
+                actionIconContentColor = TextCream
             )
         )
     }

@@ -19,6 +19,9 @@ import androidx.room.PrimaryKey
 data class TaskEntity(
     @PrimaryKey val id: String,
     val name: String,
+    val description: String,
     val isDone: Boolean,
     val projectId: String,
+    val timestamp: String, // ISO ZonedDateTime string
+    val lastUpdated: Long = 0L, // For sync reconciliation
 )

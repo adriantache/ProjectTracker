@@ -26,10 +26,16 @@ interface ProjectDao {
         }
     }
 
+    @Query("SELECT * FROM projects WHERE id = :projectId")
+    suspend fun getProject(projectId: String): ProjectEntity?
+
     @Transaction
     @Query("SELECT * FROM projects")
     fun getProjectsWithTasksFlow(): Flow<List<ProjectWithTasks>>
 
     @Query("DELETE FROM projects WHERE id = :projectId")
     suspend fun deleteProject(projectId: String)
+
+    @Query("DELETE FROM projects WHERE id NOT IN (:projectIds)")
+    suspend fun deleteProjectsExcept(projectIds: List<String>)
 }

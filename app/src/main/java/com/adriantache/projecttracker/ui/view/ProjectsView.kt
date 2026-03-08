@@ -2,8 +2,8 @@ package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -43,8 +43,8 @@ fun ProjectsView(
     onAddProject: (String, String, Category) -> Unit,
     onProjectClick: (String) -> Unit,
     onDeleteProject: (String) -> Unit,
+    onRefresh: () -> Unit,
 ) {
-
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
 
@@ -57,7 +57,8 @@ fun ProjectsView(
             MainTopBar(
                 title = "${category.name} Projects",
                 scrollBehavior = scrollBehavior,
-                onBackClick = onBackClick
+                onBackClick = onBackClick,
+                onRefresh = onRefresh
             )
         },
         floatingActionButton = {
@@ -79,13 +80,14 @@ fun ProjectsView(
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 48.dp)
+                .fillMaxSize()
         ) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             ) {
                 itemsIndexed(projects) { index, project ->
                     ItemCard(
@@ -136,6 +138,7 @@ fun ProjectsViewPreview() {
             onAddProject = { _, _, _ -> },
             onProjectClick = {},
             onDeleteProject = {},
+            onRefresh = {},
         )
     }
 }

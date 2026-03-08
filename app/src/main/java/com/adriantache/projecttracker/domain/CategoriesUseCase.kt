@@ -45,11 +45,10 @@ class CategoriesUseCase @Inject constructor(
         projectsJob = repository.getProjectsFlow()
             .onEach { newList ->
                 Log.d("CategoriesUseCase", "Database emission: ${newList.size} projects")
-                val oldProjects = projects
                 projects = newList
 
                 // Update UI state based on new data
-                updateStateWithNewData(oldProjects, newList)
+                updateStateWithNewData(newList = newList)
             }
             .launchIn(scope)
 
@@ -73,7 +72,7 @@ class CategoriesUseCase @Inject constructor(
         }
     }
 
-    private fun updateStateWithNewData(oldList: List<Project>, newList: List<Project>) {
+    private fun updateStateWithNewData(oldList: List<Project> = emptyList(), newList: List<Project>) {
         when (val currentState = state.value) {
             is CategoryView -> showCategories()
 

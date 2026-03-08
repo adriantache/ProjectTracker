@@ -8,7 +8,6 @@ import com.adriantache.projecttracker.domain.entity.Project
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
-// TODO: improve error handling
 class ProjectsRepository @Inject constructor(
     private val localDataSource: LocalDataSource,
     private val remoteDataSource: RemoteDataSource,
@@ -17,21 +16,24 @@ class ProjectsRepository @Inject constructor(
         localDataSource.getProjectsFlow()
 
     override suspend fun fetchProjects(): Result<Unit> =
-        remoteDataSource.getProjects()
+        remoteDataSource.getProjectsWithTimestamps()
             .onSuccess { remoteProjects ->
-                remoteProjects.forEach {
-                    localDataSource.saveProject(it)
-                }
-            }.map { } // Convert Result<List<Project>> to Result<Unit>
+                localDataSource.syncProjects(remoteProjects)
+                    .onFailure {
+                        Log.e("ProjectsRepository", "Error syncing projects to local database", it)
+                    }
+            }.map { }
 
-    override suspend fun saveProject(newProject: Project): Result<Unit> =
-        localDataSource.saveProject(newProject)
+    override suspend fun saveProject(newProject: Project): Result<Unit> {
+        val timestamp = System.currentTimeMillis()
+        return localDataSource.saveProject(newProject, timestamp)
             .onSuccess {
-                remoteDataSource.saveProject(newProject)
+                remoteDataSource.saveProject(newProject, timestamp)
                     .onFailure {
                         Log.e("ProjectsRepository", "Error saving project to remote", it)
                     }
             }
+    }
 
     override suspend fun deleteProject(projectId: String): Result<Unit> =
         localDataSource.deleteProject(projectId)

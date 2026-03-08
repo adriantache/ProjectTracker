@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 1,
-    "identityHash": "eed56b91c568ba7a39ad810f6e9cd835",
+    "version": 3,
+    "identityHash": "326a2000376370f22f7e761d22f1d597",
     "entities": [
       {
         "tableName": "projects",
@@ -108,7 +108,7 @@
       },
       {
         "tableName": "tasks",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `isDone` INTEGER NOT NULL, `projectId` TEXT NOT NULL, `taskTimestamp` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`projectId`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `isDone` INTEGER NOT NULL, `projectId` TEXT NOT NULL, `timestamp` TEXT NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`projectId`) REFERENCES `projects`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -141,9 +141,9 @@
             "notNull": true
           },
           {
-            "fieldPath": "taskTimestamp",
-            "columnName": "taskTimestamp",
-            "affinity": "INTEGER",
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "TEXT",
             "notNull": true
           },
           {
@@ -187,7 +187,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eed56b91c568ba7a39ad810f6e9cd835')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '326a2000376370f22f7e761d22f1d597')"
     ]
   }
 }

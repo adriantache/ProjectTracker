@@ -3,6 +3,7 @@ package com.adriantache.projecttracker.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.adriantache.projecttracker.data.local.entity.TaskEntity
@@ -22,4 +23,13 @@ interface TaskDao {
             updateTask(task)
         }
     }
+
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    suspend fun getTask(taskId: String): TaskEntity?
+
+    @Query("DELETE FROM tasks WHERE projectId = :projectId AND id NOT IN (:taskIds)")
+    suspend fun deleteTasksForProjectExcept(projectId: String, taskIds: List<String>)
+
+    @Query("DELETE FROM tasks WHERE projectId = :projectId")
+    suspend fun deleteTasksForProject(projectId: String)
 }

@@ -7,18 +7,22 @@ import com.adriantache.projecttracker.data.local.entity.TaskEntity
 import com.adriantache.projecttracker.domain.entity.Category
 import com.adriantache.projecttracker.domain.entity.Project
 import com.adriantache.projecttracker.domain.entity.Task
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
-fun Project.toEntity() = ProjectEntity(
+fun Project.toEntity(lastUpdated: Long = System.currentTimeMillis()) = ProjectEntity(
     id = id,
     name = name,
     description = description,
     categoryId = category.id,
+    lastUpdated = lastUpdated,
 )
 
-fun Category.toEntity() = CategoryEntity(
+fun Category.toEntity(lastUpdated: Long = System.currentTimeMillis()) = CategoryEntity(
     id = id,
     name = name,
     description = description,
+    lastUpdated = lastUpdated,
 )
 
 fun CategoryEntity.toCategory() = Category(
@@ -35,15 +39,20 @@ fun ProjectWithTasks.toProject() = Project(
     tasks = tasks.map { it.toTask() }.associateBy { it.id },
 )
 
-fun Task.toEntity(projectId: String) = TaskEntity(
+fun Task.toEntity(projectId: String, lastUpdated: Long = System.currentTimeMillis()) = TaskEntity(
     id = id,
     projectId = projectId,
     name = title,
+    description = description,
     isDone = isDone,
+    timestamp = timestamp.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+    lastUpdated = lastUpdated,
 )
 
 fun TaskEntity.toTask() = Task(
     id = id,
     title = name,
+    description = description,
     isDone = isDone,
+    timestamp = ZonedDateTime.parse(timestamp),
 )

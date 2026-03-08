@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "831857688316",
+    "firebase_url": "https://project-tracker-cd9b6-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "project-tracker-cd9b6",
     "storage_bucket": "project-tracker-cd9b6.firebasestorage.app"
   },
@@ -19,6 +20,14 @@
           "android_info": {
             "package_name": "com.adriantache.projecttracker",
             "certificate_hash": "7cabd955f6776e71a411da8ad1f41e4b0b032225"
+          }
+        },
+        {
+          "client_id": "831857688316-rkcn1shkm5tvuji8eask18d4m35ern8b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.adriantache.projecttracker",
+            "certificate_hash": "65ede9c6ef5d3f7822398ab22885c4576cfe9d78"
           }
         },
         {

@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,6 +55,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,6 +71,7 @@ import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +81,7 @@ fun ProjectView(
     onBackClick: () -> Unit,
     onAddTask: (String, String) -> Unit,
     onTaskToggle: (String) -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var isAddingTask by remember { mutableStateOf(false) }
@@ -93,96 +97,106 @@ fun ProjectView(
             MainTopBar(
                 title = project.name,
                 scrollBehavior = scrollBehavior,
-                onBackClick = onBackClick
+                onBackClick = onBackClick,
+                onRefresh = onRefresh
             )
         }
     ) { paddingValues ->
         val (doneTasks, notDoneTasks) = project.tasks.partition { it.isDone }
 
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .padding(horizontal = 48.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Text(
-                    text = project.description,
-                    fontFamily = InterFamily,
-                    fontSize = 18.sp,
-                    color = TextMuted,
-                    lineHeight = 28.sp,
-                    modifier = Modifier.padding(bottom = 32.dp, top = 16.dp)
-                )
-            }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 48.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    Text(
+                        text = project.description,
+                        fontFamily = InterFamily,
+                        fontSize = 18.sp,
+                        color = TextMuted,
+                        lineHeight = 28.sp,
+                        modifier = Modifier.padding(bottom = 32.dp, top = 16.dp)
+                    )
+                }
 
-            item {
-                Text(
-                    text = "TASKS",
-                    fontFamily = InterFamily,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentTeal,
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
+                item {
+                    Text(
+                        text = "TASKS",
+                        fontFamily = InterFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentTeal,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
 
-            item {
-                AddTaskItem(
-                    isExpanded = isAddingTask,
-                    onExpandedChange = { isAddingTask = it },
-                    title = newTaskTitle,
-                    onTitleChange = { newTaskTitle = it },
-                    description = newTaskDescription,
-                    onDescriptionChange = { newTaskDescription = it },
-                    onAddClick = {
-                        if (newTaskTitle.isNotBlank()) {
-                            onAddTask(newTaskTitle, newTaskDescription)
+                item {
+                    AddTaskItem(
+                        isExpanded = isAddingTask,
+                        onExpandedChange = { isAddingTask = it },
+                        title = newTaskTitle,
+                        onTitleChange = {
+                            newTaskTitle = it.replaceFirstChar { char ->
+                                if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString()
+                            }
+                        },
+                        description = newTaskDescription,
+                        onDescriptionChange = { newTaskDescription = it },
+                        onAddClick = {
+                            if (newTaskTitle.isNotBlank()) {
+                                onAddTask(newTaskTitle, newTaskDescription)
+                                newTaskTitle = ""
+                                newTaskDescription = ""
+                                isAddingTask = false
+                            }
+                        },
+                        onCancelClick = {
                             newTaskTitle = ""
                             newTaskDescription = ""
                             isAddingTask = false
                         }
-                    },
-                    onCancelClick = {
-                        newTaskTitle = ""
-                        newTaskDescription = ""
-                        isAddingTask = false
-                    }
-                )
-            }
-
-            items(notDoneTasks) { task ->
-                TaskItem(
-                    task = task,
-                    onToggle = { onTaskToggle(task.id) }
-                )
-            }
-
-            if (doneTasks.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "COMPLETED",
-                        fontFamily = InterFamily,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted,
-                        letterSpacing = 2.sp,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
                 }
 
-                items(doneTasks) { task ->
+                items(notDoneTasks) { task ->
                     TaskItem(
                         task = task,
                         onToggle = { onTaskToggle(task.id) }
                     )
                 }
-            }
 
-            item {
-                Spacer(modifier = Modifier.height(100.dp))
+                if (doneTasks.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "COMPLETED",
+                            fontFamily = InterFamily,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextMuted,
+                            letterSpacing = 2.sp,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                        )
+                    }
+
+                    items(doneTasks) { task ->
+                        TaskItem(
+                            task = task,
+                            onToggle = { onTaskToggle(task.id) }
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(100.dp))
+                }
             }
         }
     }
@@ -260,6 +274,7 @@ fun AddTaskItem(
                         ),
                         cursorBrush = SolidColor(AccentTeal),
                         keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
                             imeAction = ImeAction.Next
                         ),
                         decorationBox = { innerTextField ->
@@ -308,6 +323,7 @@ fun AddTaskItem(
                                 ),
                                 cursorBrush = SolidColor(AccentTeal),
                                 keyboardOptions = KeyboardOptions(
+                                    capitalization = KeyboardCapitalization.Sentences,
                                     imeAction = ImeAction.Done
                                 ),
                                 keyboardActions = KeyboardActions(
@@ -449,7 +465,8 @@ fun ProjectViewPreview() {
             project = sampleProject,
             onBackClick = {},
             onAddTask = { _, _ -> },
-            onTaskToggle = {}
+            onTaskToggle = {},
+            onRefresh = {},
         )
     }
 }

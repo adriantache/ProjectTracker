@@ -72,6 +72,7 @@ fun ProjectNavigation(
                         onDeleteCategory = { categoryId ->
                             currentState.onDeleteCategory(categoryId)
                         },
+                        onRefresh = currentState.onRefresh
                     )
                 }
 
@@ -131,6 +132,7 @@ fun ProjectNavigation(
                         onDeleteProject = { projectId ->
                             currentState.onDeleteProject(projectId)
                         },
+                        onRefresh = currentState.onRefresh
                     )
                 }
 
@@ -185,7 +187,8 @@ fun ProjectNavigation(
                         },
                         onAddTask = { title, description ->
                             currentState.onAddTask(Task(title = title, description = description))
-                        }
+                        },
+                        onRefresh = currentState.onRefresh
                     )
                 }
 

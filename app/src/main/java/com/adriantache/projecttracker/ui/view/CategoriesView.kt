@@ -2,8 +2,8 @@ package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -16,12 +16,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.adriantache.projecttracker.domain.entity.Category
@@ -39,14 +41,22 @@ fun CategoriesView(
     onAddProject: (String, String, Category) -> Unit,
     onCategoryClick: (String) -> Unit,
     onDeleteCategory: (String) -> Unit,
+    onRefresh: () -> Unit,
 ) {
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         containerColor = BackgroundDark,
         topBar = {
-            MainTopBar(title = "Categories")
+            MainTopBar(
+                title = "Categories",
+                scrollBehavior = scrollBehavior,
+                onRefresh = onRefresh
+            )
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -54,6 +64,7 @@ fun CategoriesView(
                 containerColor = AccentTeal,
                 contentColor = BackgroundDark,
                 shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(16.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
@@ -66,13 +77,14 @@ fun CategoriesView(
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 48.dp, vertical = 8.dp)
+                .fillMaxSize()
         ) {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
+                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize()
             ) {
                 itemsIndexed(categories) { index, category ->
                     ItemCard(
@@ -118,6 +130,7 @@ fun CategoriesViewPreview() {
             onAddProject = { _, _, _ -> },
             onCategoryClick = {},
             onDeleteCategory = {},
+            onRefresh = {},
         )
     }
 }

@@ -96,7 +96,7 @@ class DaoTest {
         projectDao.insertProject(project)
 
         // Case: adding a task to a project
-        val task = TaskEntity("task1", "Task 1", false, "proj1")
+        val task = TaskEntity("task1", "Task 1", "Task Description", false, "proj1", 123456L)
         taskDao.insertTask(task)
 
         val results = projectDao.getProjectsWithTasksFlow().first()
@@ -111,7 +111,7 @@ class DaoTest {
         categoryDao.insertCategory(category)
         val project = ProjectEntity("proj1", "Project 1", "Desc", "cat1")
         projectDao.insertProject(project)
-        val task = TaskEntity("task1", "Incomplete Task", false, "proj1")
+        val task = TaskEntity("task1", "Incomplete Task", "Task Description", false, "proj1", 123456L)
         taskDao.insertTask(task)
 
         // Verify initial state
@@ -132,7 +132,7 @@ class DaoTest {
         categoryDao.insertCategory(category)
         val project = ProjectEntity("proj1", "Project 1", "Desc", "cat1")
         projectDao.insertProject(project)
-        taskDao.insertTask(TaskEntity("task1", "Task 1", false, "proj1"))
+        taskDao.insertTask(TaskEntity("task1", "Task 1", "Task Description", false, "proj1", 123456L))
 
         projectDao.deleteProject("proj1")
 

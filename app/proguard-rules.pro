@@ -5,17 +5,31 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Firebase Realtime Database
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.firebase.database.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep remote data classes for Firebase deserialization
+-keep class com.adriantache.projecttracker.data.remote.model.RemoteProject { *; }
+-keep class com.adriantache.projecttracker.data.remote.model.RemoteCategory { *; }
+-keep class com.adriantache.projecttracker.data.remote.model.RemoteTask { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Also keep anything annotated with @Keep
+-keep @androidx.annotation.Keep class * { *; }
+-keepclassmembers class * {
+    @androidx.annotation.Keep <fields>;
+    @androidx.annotation.Keep <methods>;
+}
+
+# Hilt rules
+-keep class dagger.hilt.internal.GeneratedComponent { *; }
+-keep class * implements dagger.hilt.internal.GeneratedComponent
+-keep @dagger.hilt.internal.GeneratedEntryPoint class *
+-keep @dagger.hilt.InstallIn class *
+-keep @dagger.hilt.EntryPoint class *
+
+# For Hilt view models
+-keep class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
