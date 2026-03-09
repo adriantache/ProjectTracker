@@ -1,6 +1,7 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -14,6 +15,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,9 +41,7 @@ fun MainTopBar(
                 val fontSize = lerp(22.sp, 57.sp, 1f - scrollBehavior.state.collapsedFraction)
                 Text(
                     text = title,
-                    fontSize = fontSize,
-                    fontFamily = PlayfairFamily,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = fontSize)
                 )
             },
             navigationIcon = {
@@ -74,7 +74,8 @@ fun MainTopBar(
                 actionIconContentColor = TextCream
             ),
             scrollBehavior = scrollBehavior,
-            windowInsets = topBarInsets
+            windowInsets = topBarInsets,
+            modifier = Modifier.padding(start = 32.dp),
         )
     } else {
         TopAppBar(
@@ -104,7 +105,8 @@ fun MainTopBar(
                 navigationIconContentColor = TextCream,
                 actionIconContentColor = TextCream
             ),
-            windowInsets = topBarInsets
+            windowInsets = topBarInsets,
+            modifier = Modifier.padding(start = 32.dp),
         )
     }
 }
