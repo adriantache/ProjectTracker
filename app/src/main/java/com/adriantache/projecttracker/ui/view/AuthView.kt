@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -62,7 +63,10 @@ fun AuthView(
         color = BackgroundDark
     ) {
         if (currentUser == null) {
-            AuthContent(auth = viewModel.auth)
+            AuthContent(
+                modifier = Modifier.systemBarsPadding(),
+                auth = viewModel.auth
+            )
         } else {
             content()
         }

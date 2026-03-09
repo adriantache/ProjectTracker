@@ -1,5 +1,6 @@
 package com.adriantache.projecttracker.ui.view
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -15,6 +16,7 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
@@ -29,6 +31,8 @@ fun MainTopBar(
     onBackClick: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
 ) {
+    val topBarInsets = WindowInsets(top = 32.dp)
+
     if (scrollBehavior != null) {
         LargeTopAppBar(
             title = {
@@ -69,7 +73,8 @@ fun MainTopBar(
                 titleContentColor = Color.White,
                 actionIconContentColor = TextCream
             ),
-            scrollBehavior = scrollBehavior
+            scrollBehavior = scrollBehavior,
+            windowInsets = topBarInsets
         )
     } else {
         TopAppBar(
@@ -98,7 +103,8 @@ fun MainTopBar(
                 titleContentColor = Color.White,
                 navigationIconContentColor = TextCream,
                 actionIconContentColor = TextCream
-            )
+            ),
+            windowInsets = topBarInsets
         )
     }
 }
