@@ -80,7 +80,7 @@ fun CategoriesView(
                 .fillMaxSize()
         ) {
             LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
+                columns = GridCells.Adaptive(200.dp),
                 contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),

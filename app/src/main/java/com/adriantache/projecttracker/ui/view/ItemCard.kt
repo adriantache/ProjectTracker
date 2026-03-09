@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -58,8 +57,8 @@ fun ItemCard(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = myCardColors(index)),
         modifier = modifier
+            .fillMaxWidth()
             .height(240.dp)
-            .widthIn(200.dp)
     ) {
         Column(
             Modifier
