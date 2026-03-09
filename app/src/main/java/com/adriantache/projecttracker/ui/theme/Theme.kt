@@ -93,6 +93,8 @@ val MyCardColors = listOf(
     CardOlive
 )
 
+fun myCardColors(index: Int) = MyCardColors[index.mod(MyCardColors.size)]
+
 private val DarkColorScheme = darkColorScheme(
     primary = TextCream,
     secondary = AccentTeal,
