@@ -1,7 +1,6 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -41,8 +40,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +62,6 @@ import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
-import kotlinx.coroutines.delay
 import java.util.Locale
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -77,26 +75,28 @@ fun AddProjectDialog(
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull() ?: Category.All) }
-    var isAddingNewCategory by remember { mutableStateOf(false) }
-    var newCategoryName by remember { mutableStateOf("") }
-    var hasFocusedNewCategory by remember { mutableStateOf(false) }
+
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var addedCategories by remember { mutableStateOf(listOf<Category>()) }
+    val allCategories = remember(categories, addedCategories) { categories + addedCategories }
 
     val focusRequester = remember { FocusRequester() }
-    val categoryFocusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
+    val isSmallScreen = configuration.screenWidthDp < 600
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
-    LaunchedEffect(isAddingNewCategory) {
-        if (isAddingNewCategory) {
-            // Small delay to ensure the field is composed before requesting focus
-            delay(100)
-            categoryFocusRequester.requestFocus()
-        } else {
-            hasFocusedNewCategory = false
-        }
+    if (showAddCategoryDialog) {
+        AddCategoryDialog(
+            onDismiss = { showAddCategoryDialog = false },
+            onAddCategory = { newCategory ->
+                addedCategories = addedCategories + newCategory
+                selectedCategory = newCategory
+            }
+        )
     }
 
     Dialog(
@@ -107,12 +107,12 @@ fun AddProjectDialog(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = CardDarkGrey),
             modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .padding(24.dp)
+                .fillMaxWidth(if (isSmallScreen) 0.95f else 0.6f)
+                .padding(if (isSmallScreen) 12.dp else 24.dp)
         ) {
             Column(
                 modifier = Modifier
-                    .padding(32.dp)
+                    .padding(if (isSmallScreen) 20.dp else 32.dp)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
@@ -141,7 +141,7 @@ fun AddProjectDialog(
                         .focusRequester(focusRequester),
                     textStyle = TextStyle(
                         fontFamily = PlayfairFamily,
-                        fontSize = 32.sp,
+                        fontSize = if (isSmallScreen) 28.sp else 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextCream
                     ),
@@ -155,7 +155,7 @@ fun AddProjectDialog(
                             Text(
                                 text = "Project Name",
                                 fontFamily = PlayfairFamily,
-                                fontSize = 32.sp,
+                                fontSize = if (isSmallScreen) 28.sp else 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextMuted.copy(alpha = 0.5f)
                             )
@@ -172,7 +172,7 @@ fun AddProjectDialog(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = TextStyle(
                         fontFamily = InterFamily,
-                        fontSize = 18.sp,
+                        fontSize = if (isSmallScreen) 16.sp else 18.sp,
                         color = TextMuted
                     ),
                     cursorBrush = SolidColor(AccentTeal),
@@ -186,7 +186,7 @@ fun AddProjectDialog(
                             Text(
                                 text = "Add a description for your project...",
                                 fontFamily = InterFamily,
-                                fontSize = 18.sp,
+                                fontSize = if (isSmallScreen) 16.sp else 18.sp,
                                 color = TextMuted.copy(alpha = 0.5f)
                             )
                         }
@@ -212,106 +212,47 @@ fun AddProjectDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    categories.forEach { category ->
+                    allCategories.forEach { category ->
                         CategoryChip(
                             name = category.name,
-                            isSelected = selectedCategory.id == category.id && !isAddingNewCategory,
+                            isSelected = selectedCategory.id == category.id,
                             onClick = {
                                 selectedCategory = category
-                                isAddingNewCategory = false
                             }
                         )
                     }
 
-                    if (isAddingNewCategory) {
-                        Box(
-                            modifier = Modifier
-                                .height(40.dp)
-                                .border(
-                                    width = 1.dp,
-                                    color = AccentTeal,
-                                    shape = RoundedCornerShape(20.dp)
-                                )
-                                .padding(horizontal = 16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BasicTextField(
-                                value = newCategoryName,
-                                onValueChange = {
-                                    newCategoryName =
-                                        it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() }
-                                },
-                                modifier = Modifier
-                                    .focusRequester(categoryFocusRequester)
-                                    .onFocusChanged { focusState ->
-                                        if (focusState.isFocused) {
-                                            hasFocusedNewCategory = true
-                                        } else {
-                                            // Only reset if it was actually focused before and is now empty
-                                            if (hasFocusedNewCategory && newCategoryName.isBlank()) {
-                                                isAddingNewCategory = false
-                                            }
-                                        }
-                                    },
-                                textStyle = TextStyle(
-                                    fontFamily = InterFamily,
-                                    fontSize = 14.sp,
-                                    color = TextCream
-                                ),
-                                cursorBrush = SolidColor(AccentTeal),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(
-                                    capitalization = KeyboardCapitalization.Sentences,
-                                    imeAction = ImeAction.Done
-                                ),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                decorationBox = { innerTextField ->
-                                    if (newCategoryName.isEmpty()) {
-                                        Text(
-                                            text = "New Category",
-                                            fontFamily = InterFamily,
-                                            fontSize = 14.sp,
-                                            color = TextMuted.copy(alpha = 0.5f)
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            )
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .height(40.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(SurfaceDark)
-                                .clickable {
-                                    isAddingNewCategory = true
-                                    newCategoryName = ""
-                                }
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = AccentTeal,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "NEW",
-                                    fontFamily = InterFamily,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = AccentTeal
-                                )
+                    Box(
+                        modifier = Modifier
+                            .height(40.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(SurfaceDark)
+                            .clickable {
+                                showAddCategoryDialog = true
                             }
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = AccentTeal,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "NEW",
+                                fontFamily = InterFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentTeal
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(if (isSmallScreen) 32.dp else 48.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -330,36 +271,199 @@ fun AddProjectDialog(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(24.dp))
+                    Spacer(modifier = Modifier.width(if (isSmallScreen) 12.dp else 24.dp))
 
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
-                                val finalCategory = if (isAddingNewCategory && newCategoryName.isNotBlank()) {
-                                    Category(name = newCategoryName, description = "")
-                                } else {
-                                    selectedCategory
-                                }
-                                onAddProject(name, description, finalCategory)
+                                onAddProject(name, description, selectedCategory)
                                 onDismiss()
                             }
                         },
+                        modifier = if (isSmallScreen) Modifier.weight(1f) else Modifier,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AccentTeal,
                             contentColor = BackgroundDark
                         ),
-                        enabled = name.isNotBlank() && (!isAddingNewCategory || newCategoryName.isNotBlank()),
+                        enabled = name.isNotBlank(),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 32.dp,
-                            vertical = 16.dp
+                            horizontal = if (isSmallScreen) 16.dp else 32.dp,
+                            vertical = if (isSmallScreen) 10.dp else 16.dp
                         )
                     ) {
                         Text(
                             "CREATE PROJECT",
                             fontFamily = InterFamily,
                             fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AddCategoryDialog(
+    onDismiss: () -> Unit,
+    onAddCategory: (Category) -> Unit,
+) {
+    var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val configuration = LocalConfiguration.current
+    val isSmallScreen = configuration.screenWidthDp < 600
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardDarkGrey),
+            modifier = Modifier
+                .fillMaxWidth(if (isSmallScreen) 0.95f else 0.5f)
+                .padding(if (isSmallScreen) 12.dp else 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(if (isSmallScreen) 20.dp else 32.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { focusManager.clearFocus() }
+                    )
+            ) {
+                Text(
+                    text = "NEW CATEGORY",
+                    fontFamily = InterFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentTeal,
+                    letterSpacing = 2.sp
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                BasicTextField(
+                    value = name,
+                    onValueChange = {
+                        name =
+                            it.replaceFirstChar { char -> if (char.isLowerCase()) char.titlecase(Locale.getDefault()) else char.toString() }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    textStyle = TextStyle(
+                        fontFamily = PlayfairFamily,
+                        fontSize = if (isSmallScreen) 28.sp else 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextCream
+                    ),
+                    cursorBrush = SolidColor(AccentTeal),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Next
+                    ),
+                    decorationBox = { innerTextField ->
+                        if (name.isEmpty()) {
+                            Text(
+                                text = "Category Name",
+                                fontFamily = PlayfairFamily,
+                                fontSize = if (isSmallScreen) 28.sp else 32.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted.copy(alpha = 0.5f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                BasicTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(
+                        fontFamily = InterFamily,
+                        fontSize = if (isSmallScreen) 16.sp else 18.sp,
+                        color = TextMuted
+                    ),
+                    cursorBrush = SolidColor(AccentTeal),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    decorationBox = { innerTextField ->
+                        if (description.isEmpty()) {
+                            Text(
+                                text = "Add a description for your category...",
+                                fontFamily = InterFamily,
+                                fontSize = if (isSmallScreen) 16.sp else 18.sp,
+                                color = TextMuted.copy(alpha = 0.5f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(if (isSmallScreen) 32.dp else 48.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(contentColor = TextMuted)
+                    ) {
+                        Text(
+                            "CANCEL",
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(if (isSmallScreen) 12.dp else 24.dp))
+
+                    Button(
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                onAddCategory(Category(name = name, description = description))
+                                onDismiss()
+                            }
+                        },
+                        modifier = if (isSmallScreen) Modifier.weight(1f) else Modifier,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentTeal,
+                            contentColor = BackgroundDark
+                        ),
+                        enabled = name.isNotBlank(),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = if (isSmallScreen) 16.dp else 32.dp,
+                            vertical = if (isSmallScreen) 10.dp else 16.dp
+                        )
+                    ) {
+                        Text(
+                            "ADD CATEGORY",
+                            fontFamily = InterFamily,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            maxLines = 1
                         )
                     }
                 }
@@ -407,6 +511,22 @@ fun CategoryChip(
 @Preview(widthDp = 1280, heightDp = 800)
 @Composable
 fun AddProjectDialogPreview() {
+    ProjectTrackerTheme {
+        AddProjectDialog(
+            categories = listOf(
+                Category(name = "Work", description = ""),
+                Category(name = "Personal", description = ""),
+                Category(name = "Study", description = "")
+            ),
+            onDismiss = {},
+            onAddProject = { _, _, _ -> }
+        )
+    }
+}
+
+@Preview(widthDp = 360, heightDp = 640)
+@Composable
+fun AddProjectDialogMobilePreview() {
     ProjectTrackerTheme {
         AddProjectDialog(
             categories = listOf(

@@ -1,6 +1,5 @@
 package com.adriantache.projecttracker.data.remote
 
-import com.adriantache.projecttracker.data.DataSource
 import com.adriantache.projecttracker.data.remote.model.RemoteCategory
 import com.adriantache.projecttracker.data.remote.model.RemoteProject
 import com.adriantache.projecttracker.data.remote.model.RemoteTask
@@ -18,9 +17,9 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 class RemoteDataSource @Inject constructor(
-    private val database: FirebaseDatabase,
+    database: FirebaseDatabase,
     private val auth: FirebaseAuth,
-) : DataSource {
+) {
     private val rootRef: DatabaseReference = database.reference
 
     private val userProjectsRef: DatabaseReference
@@ -28,7 +27,7 @@ class RemoteDataSource @Inject constructor(
             rootRef.child("users").child(uid).child("projects")
         } ?: throw Exception("User not logged in")
 
-    override suspend fun getProjects(): Result<List<Project>> = runCatching {
+    suspend fun getProjects(): Result<List<Project>> = runCatching {
         getProjectsWithTimestamps().getOrThrow().map { it.first }
     }
 
@@ -38,16 +37,13 @@ class RemoteDataSource @Inject constructor(
             remoteProject?.let {
                 val timestampLong = try {
                     ZonedDateTime.parse(it.timestamp).toInstant().toEpochMilli()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     0L
                 }
                 it.toProject() to timestampLong
             }
         }
     }
-
-    override suspend fun saveProject(newProject: Project): Result<Unit> =
-        saveProject(newProject, System.currentTimeMillis())
 
     suspend fun saveProject(newProject: Project, lastUpdated: Long): Result<Unit> = runCatching {
         val isoTimestamp = Instant.ofEpochMilli(lastUpdated)
@@ -78,7 +74,7 @@ class RemoteDataSource @Inject constructor(
         userProjectsRef.child(newProject.id).setValue(remoteProject).await()
     }
 
-    override suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
+    suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
         userProjectsRef.child(projectId).removeValue().await()
     }
 
@@ -96,7 +92,7 @@ class RemoteDataSource @Inject constructor(
                     isDone = task.isDone,
                     timestamp = try {
                         ZonedDateTime.parse(task.timestamp)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         ZonedDateTime.now()
                     }
                 )

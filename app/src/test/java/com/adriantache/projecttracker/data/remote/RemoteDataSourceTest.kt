@@ -1,5 +1,7 @@
 package com.adriantache.projecttracker.data.remote
 
+import com.adriantache.projecttracker.data.remote.model.RemoteCategory
+import com.adriantache.projecttracker.data.remote.model.RemoteProject
 import com.adriantache.projecttracker.domain.entity.Project
 import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.FirebaseAuth
@@ -19,6 +21,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 class RemoteDataSourceTest {
 
@@ -58,12 +62,19 @@ class RemoteDataSourceTest {
         // Arrange
         val snapshot: DataSnapshot = mockk()
         val task: Task<DataSnapshot> = mockk()
-        val project = Project(id = "1", name = "Test Project")
+        val now = ZonedDateTime.now()
+        val isoTimestamp = now.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
+        val remoteProject = RemoteProject(
+            id = "1",
+            name = "Test Project",
+            timestamp = isoTimestamp,
+            category = RemoteCategory(id = "cat1", name = "Cat", timestamp = isoTimestamp)
+        )
 
         every { userProjectsRef.get() } returns task
         coEvery { task.await() } returns snapshot
         every { snapshot.children } returns listOf(snapshot)
-        every { snapshot.getValue(Project::class.java) } returns project
+        every { snapshot.getValue(RemoteProject::class.java) } returns remoteProject
 
         // Act
         val result = remoteDataSource.getProjects()
@@ -95,11 +106,11 @@ class RemoteDataSourceTest {
         val task: Task<Void> = mockk()
 
         every { userProjectsRef.child("proj123") } returns taskRef
-        every { taskRef.setValue(project) } returns task
+        every { taskRef.setValue(any()) } returns task
         coEvery { task.await() } returns mockk() // Void task
 
         // Act
-        val result = remoteDataSource.saveProject(project)
+        val result = remoteDataSource.saveProject(project, System.currentTimeMillis())
 
         // Assert
         assertTrue(result.isSuccess)

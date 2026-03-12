@@ -1,7 +1,6 @@
 package com.adriantache.projecttracker.data.local
 
 import androidx.room.withTransaction
-import com.adriantache.projecttracker.data.DataSource
 import com.adriantache.projecttracker.data.local.dao.CategoryDao
 import com.adriantache.projecttracker.data.local.dao.ProjectDao
 import com.adriantache.projecttracker.data.local.dao.TaskDao
@@ -15,15 +14,13 @@ class LocalDataSource @Inject constructor(
     private val projectDao: ProjectDao,
     private val taskDao: TaskDao,
     private val categoryDao: CategoryDao,
-) : DataSource {
+) {
     fun getProjectsFlow(): Flow<List<Project>> =
         projectDao.getProjectsWithTasksFlow().map { list ->
             list.map { it.toProject() }
         }
 
-    override suspend fun getProjects(): Result<List<Project>> = error("Use getProjectsFlow instead.")
-
-    override suspend fun saveProject(newProject: Project): Result<Unit> = saveProject(newProject, System.currentTimeMillis())
+    suspend fun saveProject(newProject: Project): Result<Unit> = saveProject(newProject, System.currentTimeMillis())
 
     suspend fun saveProject(newProject: Project, timestamp: Long): Result<Unit> = runCatching {
         database.withTransaction {
@@ -38,15 +35,11 @@ class LocalDataSource @Inject constructor(
         }
     }
 
-    override suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
+    suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
         database.withTransaction {
             taskDao.deleteTasksForProject(projectId)
             projectDao.deleteProject(projectId)
         }
-    }
-
-    suspend fun getProjectTimestamp(projectId: String): Long {
-        return projectDao.getProject(projectId)?.lastUpdated ?: 0L
     }
 
     /**

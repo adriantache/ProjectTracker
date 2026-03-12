@@ -1,5 +1,6 @@
 package com.adriantache.projecttracker.data.local
 
+import androidx.room.withTransaction
 import app.cash.turbine.test
 import com.adriantache.projecttracker.data.local.dao.CategoryDao
 import com.adriantache.projecttracker.data.local.dao.ProjectDao
@@ -14,8 +15,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -23,13 +27,20 @@ import org.junit.Test
 class LocalDataSourceTest {
 
     private lateinit var localDataSource: LocalDataSource
+    private val database: AppDatabase = mockk()
     private val projectDao: ProjectDao = mockk()
     private val taskDao: TaskDao = mockk()
     private val categoryDao: CategoryDao = mockk()
 
     @Before
     fun setup() {
-        localDataSource = LocalDataSource(projectDao, taskDao, categoryDao)
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        localDataSource = LocalDataSource(database, projectDao, taskDao, categoryDao)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic("androidx.room.RoomDatabaseKt")
     }
 
     @Test
@@ -63,6 +74,11 @@ class LocalDataSourceTest {
             tasks = mapOf("t1" to Task(id = "t1", title = "Task 1"))
         )
 
+        // Mock database.withTransaction to just execute the block
+        coEvery { database.withTransaction<Unit>(any()) } coAnswers {
+            val block = secondArg<suspend () -> Unit>()
+            block()
+        }
         coEvery { categoryDao.upsertCategory(any()) } returns Unit
         coEvery { projectDao.upsertProject(any()) } returns Unit
         coEvery { taskDao.upsertTask(any()) } returns Unit
@@ -78,11 +94,17 @@ class LocalDataSourceTest {
     @Test
     fun `deleteProject calls projectDao delete`() = runTest {
         val projectId = "p1"
+        coEvery { database.withTransaction<Unit>(any()) } coAnswers {
+            val block = secondArg<suspend () -> Unit>()
+            block()
+        }
+        coEvery { taskDao.deleteTasksForProject(projectId) } returns Unit
         coEvery { projectDao.deleteProject(projectId) } returns Unit
 
         val result = localDataSource.deleteProject(projectId)
 
         assert(result.isSuccess)
+        coVerify(exactly = 1) { taskDao.deleteTasksForProject(projectId) }
         coVerify(exactly = 1) { projectDao.deleteProject(projectId) }
     }
 }

@@ -40,53 +40,53 @@ class ProjectsRepositoryTest {
 
     @Test
     fun `fetchProjects fetches from remote and saves to local`() = runTest {
-        val projects = listOf(Project(name = "Remote Project", category = Category.All))
-        coEvery { remoteDataSource.getProjects() } returns Result.success(projects)
-        coEvery { localDataSource.saveProject(any()) } returns Result.success(Unit)
+        val projects = listOf(Project(name = "Remote Project", category = Category.All) to 123L)
+        coEvery { remoteDataSource.getProjectsWithTimestamps() } returns Result.success(projects)
+        coEvery { localDataSource.syncProjects(any()) } returns Result.success(Unit)
 
         val result = repository.fetchProjects()
 
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { remoteDataSource.getProjects() }
-        coVerify(exactly = 1) { localDataSource.saveProject(projects[0]) }
+        coVerify(exactly = 1) { remoteDataSource.getProjectsWithTimestamps() }
+        coVerify(exactly = 1) { localDataSource.syncProjects(projects) }
     }
 
     @Test
     fun `fetchProjects returns failure when remote fails`() = runTest {
         val exception = Exception("Remote error")
-        coEvery { remoteDataSource.getProjects() } returns Result.failure(exception)
+        coEvery { remoteDataSource.getProjectsWithTimestamps() } returns Result.failure(exception)
 
         val result = repository.fetchProjects()
 
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())
-        coVerify(exactly = 0) { localDataSource.saveProject(any()) }
+        coVerify(exactly = 0) { localDataSource.syncProjects(any()) }
     }
 
     @Test
     fun `saveProject saves to local then remote`() = runTest {
         val project = Project(name = "New Project", category = Category.All)
-        coEvery { localDataSource.saveProject(project) } returns Result.success(Unit)
-        coEvery { remoteDataSource.saveProject(project) } returns Result.success(Unit)
+        coEvery { localDataSource.saveProject(project, any()) } returns Result.success(Unit)
+        coEvery { remoteDataSource.saveProject(project, any()) } returns Result.success(Unit)
 
         val result = repository.saveProject(project)
 
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { localDataSource.saveProject(project) }
-        coVerify(exactly = 1) { remoteDataSource.saveProject(project) }
+        coVerify(exactly = 1) { localDataSource.saveProject(project, any()) }
+        coVerify(exactly = 1) { remoteDataSource.saveProject(project, any()) }
     }
 
     @Test
     fun `saveProject returns failure when local fails`() = runTest {
         val project = Project(name = "New Project", category = Category.All)
         val exception = Exception("Local error")
-        coEvery { localDataSource.saveProject(project) } returns Result.failure(exception)
+        coEvery { localDataSource.saveProject(project, any()) } returns Result.failure(exception)
 
         val result = repository.saveProject(project)
 
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())
-        coVerify(exactly = 0) { remoteDataSource.saveProject(any()) }
+        coVerify(exactly = 0) { remoteDataSource.saveProject(any(), any()) }
     }
 
     @Test
