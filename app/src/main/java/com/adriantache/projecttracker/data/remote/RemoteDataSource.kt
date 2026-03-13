@@ -69,7 +69,8 @@ class RemoteDataSource @Inject constructor(
                     timestamp = task.timestamp.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
                 )
             },
-            timestamp = isoTimestamp
+            timestamp = isoTimestamp,
+            completionTimestamp = newProject.completionTimestamp
         )
         userProjectsRef.child(newProject.id).setValue(remoteProject).await()
     }
@@ -96,7 +97,8 @@ class RemoteDataSource @Inject constructor(
                         ZonedDateTime.now()
                     }
                 )
-            }
+            },
+            completionTimestamp = completionTimestamp
         )
     }
 }

@@ -146,6 +146,8 @@ fun ProjectsViewPreview() {
             tasksText = "$index/20",
             tasks = emptyList(),
             categoryName = "Test",
+            isCompleted = false,
+            canBeCompleted = false
         )
     }
 

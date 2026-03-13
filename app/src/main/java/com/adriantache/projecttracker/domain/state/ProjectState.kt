@@ -10,7 +10,9 @@ sealed interface ProjectState {
     data class CategoryView(
         val categories: List<Category>,
         val projectCounts: Map<String, Int>,
+        val completedProjects: List<Project>,
         val onCategorySelected: (String) -> Unit,
+        val onProjectSelected: (String) -> Unit,
         val onEditCategory: (String, String, String) -> Unit,
         val onDeleteCategory: (String) -> Unit,
         val onRefresh: () -> Unit,
@@ -39,6 +41,7 @@ sealed interface ProjectState {
         val onBack: () -> Unit,
         val onRefresh: () -> Unit,
         val onMarkTaskAsDone: (taskId: String, isDone: Boolean) -> Unit,
+        val onCompleteProject: () -> Unit,
     ) : ProjectState
 
     data class Error(val message: String) : ProjectState

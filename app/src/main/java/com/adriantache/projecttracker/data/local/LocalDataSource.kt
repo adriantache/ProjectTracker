@@ -20,6 +20,9 @@ class LocalDataSource @Inject constructor(
             list.map { it.toProject() }
         }
 
+    suspend fun getProject(projectId: String): Project? =
+        projectDao.getProjectWithTasks(projectId)?.toProject()
+
     suspend fun saveProject(newProject: Project): Result<Unit> = saveProject(newProject, System.currentTimeMillis())
 
     suspend fun saveProject(newProject: Project, timestamp: Long): Result<Unit> = runCatching {
@@ -32,6 +35,18 @@ class LocalDataSource @Inject constructor(
             newProject.tasks.values.forEach { task ->
                 taskDao.upsertTask(task.toEntity(newProject.id, timestamp))
             }
+        }
+    }
+
+    suspend fun completeProject(projectId: String, completionTimestamp: Long): Result<Project> = runCatching {
+        database.withTransaction {
+            val projectWithTasks = projectDao.getProjectWithTasks(projectId) ?: throw Exception("Project not found")
+            val updatedProjectEntity = projectWithTasks.project.copy(
+                completionTimestamp = completionTimestamp,
+                lastUpdated = completionTimestamp
+            )
+            projectDao.upsertProject(updatedProjectEntity)
+            projectWithTasks.copy(project = updatedProjectEntity).toProject()
         }
     }
 

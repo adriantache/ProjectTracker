@@ -34,7 +34,7 @@ class CategoriesUseCase @Inject constructor(
 
     var projects = emptyList<Project>()
     val categories: List<Category>
-        get() = projects.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
+        get() = projects.filter { !it.isCompleted }.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
 
     private fun onInit() {
         Log.d("CategoriesUseCase", "onInit triggered")
@@ -106,12 +106,16 @@ class CategoriesUseCase @Inject constructor(
     }
 
     private fun showCategories() {
-        val projectCounts = projects.groupBy { it.category.id }.mapValues { it.value.size }
+        val activeProjects = projects.filter { !it.isCompleted }
+        val completedProjects = projects.filter { it.isCompleted }.sortedByDescending { it.completionTimestamp }
+        val projectCounts = activeProjects.groupBy { it.category.id }.mapValues { it.value.size }
 
         state.value = CategoryView(
             categories = categories,
             projectCounts = projectCounts,
+            completedProjects = completedProjects,
             onCategorySelected = ::onCategorySelected,
+            onProjectSelected = ::onProjectSelected,
             onEditCategory = ::onEditCategory,
             onDeleteCategory = ::onDeleteCategory,
             onRefresh = ::onRefreshCategories,
@@ -131,7 +135,7 @@ class CategoriesUseCase @Inject constructor(
         val targetCategory = categories.find { it.id == categoryId }
 
         val filteredProjects = if (targetCategory != null) {
-            projects.filter { it.category.id == targetCategory.id }
+            projects.filter { it.category.id == targetCategory.id && !it.isCompleted }
         } else {
             emptyList()
         }
@@ -170,15 +174,31 @@ class CategoriesUseCase @Inject constructor(
             onEditTask = { taskId, title, description -> onEditTask(project, taskId, title, description) },
             onDeleteTask = { taskId -> onDeleteTask(project, taskId) },
             onMarkTaskAsDone = { id, done -> onMarkTaskAsDone(project, id, done) },
-            onBack = { onCategorySelected(project.category.id) },
+            onCompleteProject = { onCompleteProject(projectId) },
+            onBack = {
+                if (project.isCompleted) {
+                    showCategories()
+                } else {
+                    onCategorySelected(project.category.id)
+                }
+            },
             onRefresh = { onRefreshProject(projectId) },
         )
+    }
+
+    private fun onCompleteProject(projectId: String) {
+        scope.launch {
+            repository.completeProject(projectId)
+        }
     }
 
     private fun onMarkTaskAsDone(project: Project, id: String, done: Boolean) {
         scope.launch {
             val task = project.tasks[id] ?: return@launch
-            val newProject = project.copy(tasks = project.tasks + (id to task.copy(isDone = done)))
+            val newProject = project.copy(
+                tasks = project.tasks + (id to task.copy(isDone = done)),
+                completionTimestamp = if (!done) null else project.completionTimestamp
+            )
             repository.saveProject(newProject)
         }
     }
@@ -192,7 +212,10 @@ class CategoriesUseCase @Inject constructor(
 
     private fun onAddTask(project: Project, task: Task) {
         scope.launch {
-            val newProject = project.copy(tasks = project.tasks + (task.id to task))
+            val newProject = project.copy(
+                tasks = project.tasks + (task.id to task),
+                completionTimestamp = null
+            )
             repository.saveProject(newProject)
         }
     }

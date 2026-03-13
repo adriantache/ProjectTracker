@@ -1,20 +1,27 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,7 +36,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,11 +57,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
@@ -60,6 +73,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -78,7 +92,12 @@ import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +111,7 @@ fun ProjectView(
     onEditTask: (String, String, String) -> Unit,
     onDeleteTask: (String) -> Unit,
     onTaskToggle: (String) -> Unit,
+    onCompleteProject: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -100,6 +120,8 @@ fun ProjectView(
     var newTaskDescription by remember { mutableStateOf("") }
     var showEditProjectDialog by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<TaskUi?>(null) }
+    var showCompleteConfirmation by remember { mutableStateOf(false) }
+    var isPlayingAnimation by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier
@@ -212,10 +234,77 @@ fun ProjectView(
                     }
                 }
 
+                if (project.canBeCompleted) {
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(
+                            onClick = { showCompleteConfirmation = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentTeal,
+                                contentColor = BackgroundDark
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(16.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "MARK PROJECT AS COMPLETED",
+                                fontFamily = InterFamily,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                    }
+                }
+
                 item {
                     Spacer(modifier = Modifier.height(100.dp))
                 }
             }
+
+            if (isPlayingAnimation) {
+                CompletionAnimation(
+                    onAnimationFinished = {
+                        isPlayingAnimation = false
+                        onBackClick()
+                    }
+                )
+            }
+        }
+
+        if (showCompleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = { showCompleteConfirmation = false },
+                title = { Text("Complete Project?", color = TextCream, fontFamily = PlayfairFamily) },
+                text = {
+                    Text(
+                        "Are you sure you want to mark this project as completed? It will be moved to the completed projects section.",
+                        color = TextMuted,
+                        fontFamily = InterFamily
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showCompleteConfirmation = false
+                            isPlayingAnimation = true
+                            onCompleteProject()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal)
+                    ) {
+                        Text("CONFIRM", color = BackgroundDark)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCompleteConfirmation = false }) {
+                        Text("CANCEL", color = TextMuted)
+                    }
+                },
+                containerColor = CardDarkGrey,
+                shape = RoundedCornerShape(24.dp)
+            )
         }
 
         if (showEditProjectDialog) {
@@ -243,6 +332,98 @@ fun ProjectView(
             )
         }
     }
+}
+
+@Composable
+fun CompletionAnimation(onAnimationFinished: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val scale = remember { Animatable(0f) }
+    val alpha = remember { Animatable(0f) }
+    val starScale = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            scale.animateTo(1.2f, tween(500, easing = FastOutSlowInEasing))
+            scale.animateTo(1f, tween(200))
+        }
+        scope.launch {
+            alpha.animateTo(1f, tween(300))
+            delay(1500)
+            alpha.animateTo(0f, tween(500))
+            onAnimationFinished()
+        }
+        scope.launch {
+            delay(400)
+            starScale.animateTo(1f, tween(600, easing = FastOutSlowInEasing))
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f * alpha.value)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .scale(scale.value)
+                .alpha(alpha.value)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Canvas(modifier = Modifier.size(200.dp)) {
+                    drawCircle(color = AccentTeal.copy(alpha = 0.2f), radius = size.minDimension / 1.5f)
+                }
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = AccentTeal,
+                    modifier = Modifier.size(120.dp)
+                )
+
+                // Random stars around
+                repeat(8) { i ->
+                    val angle = (i * 45).toDouble()
+                    val radius = 100.dp
+                    StarIcon(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .offset(
+                                x = (cos(Math.toRadians(angle)) * radius.value).dp,
+                                y = (sin(Math.toRadians(angle)) * radius.value).dp
+                            )
+                            .scale(starScale.value * (0.5f + Random.nextFloat() * 0.5f))
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "CONGRATULATIONS!",
+                fontFamily = PlayfairFamily,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextCream,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Project marked as completed.",
+                fontFamily = InterFamily,
+                fontSize = 18.sp,
+                color = TextMuted,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+fun StarIcon(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.Star,
+        contentDescription = null,
+        tint = Color(0xFFFFD700),
+        modifier = modifier.size(24.dp)
+    )
 }
 
 @Composable
@@ -668,7 +849,9 @@ fun ProjectViewPreview() {
             TaskUi("6", "Evaluation Metrics", "Add BLEU and ROUGE score calculation", false),
             TaskUi("7", "Quantization Experiments", "Test 8-bit and 4-bit quantization", false),
             TaskUi("8", "Final Report", "Document all findings and results", false),
-        )
+        ),
+        isCompleted = false,
+        canBeCompleted = false
     )
 
     ProjectTrackerTheme {
@@ -680,6 +863,7 @@ fun ProjectViewPreview() {
             onEditTask = { _, _, _ -> },
             onDeleteTask = {},
             onTaskToggle = {},
+            onCompleteProject = {},
             onRefresh = {},
         )
     }

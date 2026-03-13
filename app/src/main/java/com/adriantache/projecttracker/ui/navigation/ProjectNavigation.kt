@@ -56,6 +56,7 @@ fun ProjectNavigation(
                         categories = currentState.categories.map {
                             it.toUi(currentState.projectCounts[it.id] ?: 0)
                         },
+                        completedProjects = currentState.completedProjects.map { it.toUi() },
                         allCategories = currentState.categories,
                         onAddProject = { name, description, category ->
                             currentState.onAddProject(
@@ -68,6 +69,9 @@ fun ProjectNavigation(
                         },
                         onCategoryClick = { categoryId ->
                             currentState.onCategorySelected(categoryId)
+                        },
+                        onProjectClick = { projectId ->
+                            currentState.onProjectSelected(projectId)
                         },
                         onEditCategory = { categoryId, name, description ->
                             currentState.onEditCategory(categoryId, name, description)
@@ -203,6 +207,9 @@ fun ProjectNavigation(
                         },
                         onDeleteTask = { taskId ->
                             currentState.onDeleteTask(taskId)
+                        },
+                        onCompleteProject = {
+                            currentState.onCompleteProject()
                         },
                         onRefresh = currentState.onRefresh
                     )

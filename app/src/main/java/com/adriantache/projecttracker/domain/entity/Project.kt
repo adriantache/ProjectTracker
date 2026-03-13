@@ -8,11 +8,15 @@ data class Project(
     val description: String = "",
     val category: Category = Category.All,
     val tasks: Map<String, Task> = emptyMap(),
+    val completionTimestamp: Long? = null,
 ) {
     val isValid = name.isNotBlank()
 
     val isDone: Boolean
         get() = tasks.values.all { it.isDone }
+
+    val isCompleted: Boolean
+        get() = completionTimestamp != null
 
     fun setName(name: String) = this.copy(name = name)
     fun setDescription(description: String) = this.copy(description = description)

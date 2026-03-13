@@ -35,6 +35,17 @@ class ProjectsRepository @Inject constructor(
             }
     }
 
+    override suspend fun completeProject(projectId: String): Result<Unit> {
+        val completionTimestamp = System.currentTimeMillis()
+        return localDataSource.completeProject(projectId, completionTimestamp)
+            .onSuccess { updatedProject ->
+                remoteDataSource.saveProject(updatedProject, completionTimestamp)
+                    .onFailure {
+                        Log.e("ProjectsRepository", "Error saving completed project to remote", it)
+                    }
+            }.map { }
+    }
+
     override suspend fun deleteProject(projectId: String): Result<Unit> =
         localDataSource.deleteProject(projectId)
             .onSuccess {

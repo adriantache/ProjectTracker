@@ -17,7 +17,9 @@ fun Project.toUi(): ProjectUi = ProjectUi(
     description = description,
     categoryName = category.name,
     tasksText = "${tasks.values.count { it.isDone }}/${tasks.size}",
-    tasks = tasks.values.sortedByDescending { it.timestamp }.map { it.toUi() }
+    tasks = tasks.values.sortedByDescending { it.timestamp }.map { it.toUi() },
+    isCompleted = isCompleted,
+    canBeCompleted = !isCompleted && isDone && tasks.isNotEmpty()
 )
 
 fun Task.toUi(): TaskUi = TaskUi(

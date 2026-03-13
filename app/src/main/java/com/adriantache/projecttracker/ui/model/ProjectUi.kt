@@ -7,4 +7,6 @@ data class ProjectUi(
     val categoryName: String,
     val tasksText: String,
     val tasks: List<TaskUi>,
+    val isCompleted: Boolean,
+    val canBeCompleted: Boolean,
 )

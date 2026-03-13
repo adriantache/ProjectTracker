@@ -16,6 +16,7 @@ fun Project.toEntity(lastUpdated: Long = System.currentTimeMillis()) = ProjectEn
     description = description,
     categoryId = category.id,
     lastUpdated = lastUpdated,
+    completionTimestamp = completionTimestamp,
 )
 
 fun Category.toEntity(lastUpdated: Long = System.currentTimeMillis()) = CategoryEntity(
@@ -37,6 +38,7 @@ fun ProjectWithTasks.toProject() = Project(
     description = project.description,
     category = category.toCategory(),
     tasks = tasks.map { it.toTask() }.associateBy { it.id },
+    completionTimestamp = project.completionTimestamp,
 )
 
 fun Task.toEntity(projectId: String, lastUpdated: Long = System.currentTimeMillis()) = TaskEntity(
