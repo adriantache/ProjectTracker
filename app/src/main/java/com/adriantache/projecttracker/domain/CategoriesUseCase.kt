@@ -34,7 +34,7 @@ class CategoriesUseCase @Inject constructor(
 
     var projects = emptyList<Project>()
     val categories: List<Category>
-        get() = projects.map { it.category }.distinctBy { it.name }.sortedBy { it.name }
+        get() = projects.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
 
     private fun onInit() {
         Log.d("CategoriesUseCase", "onInit triggered")
@@ -112,6 +112,7 @@ class CategoriesUseCase @Inject constructor(
             categories = categories,
             projectCounts = projectCounts,
             onCategorySelected = ::onCategorySelected,
+            onEditCategory = ::onEditCategory,
             onDeleteCategory = ::onDeleteCategory,
             onRefresh = ::onRefreshCategories,
             onAddProject = ::onAddProject,
@@ -128,12 +129,11 @@ class CategoriesUseCase @Inject constructor(
 
     private fun onCategorySelected(categoryId: String) {
         val targetCategory = categories.find { it.id == categoryId }
-            ?: categories.find { it.name == categoryId }
 
         val filteredProjects = if (targetCategory != null) {
-            projects.filter { it.category.name == targetCategory.name }
+            projects.filter { it.category.id == targetCategory.id }
         } else {
-            projects.filter { it.category.id == categoryId }
+            emptyList()
         }
 
         state.value = ProjectsView(
@@ -141,6 +141,7 @@ class CategoriesUseCase @Inject constructor(
             projects = filteredProjects,
             categories = categories,
             onProjectSelected = ::onProjectSelected,
+            onEditProject = ::onEditProject,
             onAddProject = ::onAddProject,
             onDeleteProject = ::onDeleteProject,
             onBack = ::showCategories,
@@ -163,7 +164,10 @@ class CategoriesUseCase @Inject constructor(
 
         state.value = TasksView(
             project = project,
+            categories = categories,
+            onEditProject = { n, d, c -> onEditProject(projectId, n, d, c) },
             onAddTask = { task -> onAddTask(project, task) },
+            onEditTask = { taskId, title, description -> onEditTask(project, taskId, title, description) },
             onDeleteTask = { taskId -> onDeleteTask(project, taskId) },
             onMarkTaskAsDone = { id, done -> onMarkTaskAsDone(project, id, done) },
             onBack = { onCategorySelected(project.category.id) },
@@ -193,6 +197,15 @@ class CategoriesUseCase @Inject constructor(
         }
     }
 
+    private fun onEditTask(project: Project, taskId: String, title: String, description: String) {
+        scope.launch {
+            val task = project.tasks[taskId] ?: return@launch
+            val updatedTask = task.copy(title = title, description = description)
+            val updatedProject = project.copy(tasks = project.tasks + (taskId to updatedTask))
+            repository.saveProject(updatedProject)
+        }
+    }
+
     private fun onRefreshProject(projectId: String) {
         scope.launch {
             state.value = Loading
@@ -210,6 +223,16 @@ class CategoriesUseCase @Inject constructor(
         }
     }
 
+    private fun onEditCategory(categoryId: String, name: String, description: String) {
+        scope.launch {
+            val projectsToUpdate = projects.filter { it.category.id == categoryId }
+            projectsToUpdate.forEach { project ->
+                val newCategory = project.category.copy(name = name, description = description)
+                repository.saveProject(project.copy(category = newCategory))
+            }
+        }
+    }
+
     private fun onAddProject(project: Project) {
         scope.launch {
             val existingCategory = categories.find { it.name.equals(project.category.name, ignoreCase = true) }
@@ -220,6 +243,18 @@ class CategoriesUseCase @Inject constructor(
             }
 
             repository.saveProject(finalProject)
+        }
+    }
+
+    private fun onEditProject(projectId: String, name: String, description: String, category: Category) {
+        scope.launch {
+            val project = projects.find { it.id == projectId } ?: return@launch
+            val updatedProject = project.copy(
+                name = name,
+                description = description,
+                category = category
+            )
+            repository.saveProject(updatedProject)
         }
     }
 

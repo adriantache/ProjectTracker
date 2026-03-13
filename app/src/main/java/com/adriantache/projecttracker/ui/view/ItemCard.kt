@@ -35,6 +35,7 @@ import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.InterFamily
 import com.adriantache.projecttracker.ui.theme.PlayfairFamily
 import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
+import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
 import com.adriantache.projecttracker.ui.theme.myCardColors
@@ -48,6 +49,7 @@ fun ItemCard(
     index: Int,
     onClick: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onEdit: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -69,7 +71,7 @@ fun ItemCard(
         ) {
             val endPadding = 8.dp
 
-            Row(modifier.fillMaxWidth()) {
+            Row(Modifier.fillMaxWidth()) {
                 Text(
                     text = title,
                     fontFamily = PlayfairFamily,
@@ -96,10 +98,18 @@ fun ItemCard(
 
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
+                        containerColor = SurfaceDark
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text("Edit", color = TextCream) },
+                            onClick = {
+                                onEdit(id)
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = TextCream) },
                             onClick = {
                                 onDelete(id)
                                 showMenu = false
@@ -153,7 +163,8 @@ fun ItemCardPreview() {
                 footerText = "5",
                 index = 0,
                 onClick = {},
-                onDelete = {}
+                onDelete = {},
+                onEdit = {}
             )
         }
     }

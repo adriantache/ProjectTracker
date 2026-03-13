@@ -42,11 +42,13 @@ fun ProjectsView(
     onBackClick: () -> Unit,
     onAddProject: (String, String, Category) -> Unit,
     onProjectClick: (String) -> Unit,
+    onEditProject: (String, String, String, Category) -> Unit,
     onDeleteProject: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingProject by remember { mutableStateOf<ProjectUi?>(null) }
 
     Scaffold(
         modifier = modifier
@@ -97,7 +99,8 @@ fun ProjectsView(
                         footerText = project.tasksText,
                         index = index,
                         onClick = onProjectClick,
-                        onDelete = onDeleteProject
+                        onDelete = onDeleteProject,
+                        onEdit = { editingProject = project }
                     )
                 }
             }
@@ -108,7 +111,23 @@ fun ProjectsView(
                 categories = allCategories,
                 initialCategory = category,
                 onDismiss = { showAddDialog = false },
-                onAddProject = onAddProject
+                onConfirm = { name, description, selectedCategory ->
+                    onAddProject(name, description, selectedCategory)
+                }
+            )
+        }
+
+        editingProject?.let { project ->
+            AddProjectDialog(
+                categories = allCategories,
+                initialCategory = allCategories.find { it.name == project.categoryName } ?: category,
+                initialName = project.name,
+                initialDescription = project.description,
+                isEdit = true,
+                onDismiss = { editingProject = null },
+                onConfirm = { name, description, selectedCategory ->
+                    onEditProject(project.id, name, description, selectedCategory)
+                }
             )
         }
     }
@@ -137,6 +156,7 @@ fun ProjectsViewPreview() {
             onBackClick = {},
             onAddProject = { _, _, _ -> },
             onProjectClick = {},
+            onEditProject = { _, _, _, _ -> },
             onDeleteProject = {},
             onRefresh = {},
         )

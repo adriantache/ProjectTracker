@@ -69,11 +69,14 @@ import java.util.Locale
 fun AddProjectDialog(
     categories: List<Category> = emptyList(),
     initialCategory: Category? = null,
+    initialName: String = "",
+    initialDescription: String = "",
+    isEdit: Boolean = false,
     onDismiss: () -> Unit,
-    onAddProject: (String, String, Category) -> Unit,
+    onConfirm: (String, String, Category) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialName) }
+    var description by remember { mutableStateOf(initialDescription) }
     var selectedCategory by remember { mutableStateOf(initialCategory ?: categories.firstOrNull() ?: Category.All) }
 
     var showAddCategoryDialog by remember { mutableStateOf(false) }
@@ -92,7 +95,7 @@ fun AddProjectDialog(
     if (showAddCategoryDialog) {
         AddCategoryDialog(
             onDismiss = { showAddCategoryDialog = false },
-            onAddCategory = { newCategory ->
+            onConfirm = { newCategory ->
                 addedCategories = addedCategories + newCategory
                 selectedCategory = newCategory
             }
@@ -120,7 +123,7 @@ fun AddProjectDialog(
                     )
             ) {
                 Text(
-                    text = "NEW PROJECT",
+                    text = if (isEdit) "EDIT PROJECT" else "NEW PROJECT",
                     fontFamily = InterFamily,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -276,7 +279,7 @@ fun AddProjectDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
-                                onAddProject(name, description, selectedCategory)
+                                onConfirm(name, description, selectedCategory)
                                 onDismiss()
                             }
                         },
@@ -293,7 +296,7 @@ fun AddProjectDialog(
                         )
                     ) {
                         Text(
-                            "CREATE PROJECT",
+                            if (isEdit) "SAVE CHANGES" else "CREATE PROJECT",
                             fontFamily = InterFamily,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
@@ -308,11 +311,14 @@ fun AddProjectDialog(
 
 @Composable
 fun AddCategoryDialog(
+    initialName: String = "",
+    initialDescription: String = "",
+    isEdit: Boolean = false,
     onDismiss: () -> Unit,
-    onAddCategory: (Category) -> Unit,
+    onConfirm: (Category) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf(initialName) }
+    var description by remember { mutableStateOf(initialDescription) }
 
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -334,6 +340,7 @@ fun AddCategoryDialog(
                 .fillMaxWidth(if (isSmallScreen) 0.95f else 0.5f)
                 .padding(if (isSmallScreen) 12.dp else 24.dp)
         ) {
+            @Suppress("DEPRECATION")
             Column(
                 modifier = Modifier
                     .padding(if (isSmallScreen) 20.dp else 32.dp)
@@ -344,7 +351,7 @@ fun AddCategoryDialog(
                     )
             ) {
                 Text(
-                    text = "NEW CATEGORY",
+                    text = if (isEdit) "EDIT CATEGORY" else "NEW CATEGORY",
                     fontFamily = InterFamily,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -442,7 +449,7 @@ fun AddCategoryDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
-                                onAddCategory(Category(name = name, description = description))
+                                onConfirm(Category(name = name, description = description))
                                 onDismiss()
                             }
                         },
@@ -459,7 +466,7 @@ fun AddCategoryDialog(
                         )
                     ) {
                         Text(
-                            "ADD CATEGORY",
+                            if (isEdit) "SAVE CHANGES" else "ADD CATEGORY",
                             fontFamily = InterFamily,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
@@ -519,7 +526,7 @@ fun AddProjectDialogPreview() {
                 Category(name = "Study", description = "")
             ),
             onDismiss = {},
-            onAddProject = { _, _, _ -> }
+            onConfirm = { _, _, _ -> }
         )
     }
 }
@@ -535,7 +542,7 @@ fun AddProjectDialogMobilePreview() {
                 Category(name = "Study", description = "")
             ),
             onDismiss = {},
-            onAddProject = { _, _, _ -> }
+            onConfirm = { _, _, _ -> }
         )
     }
 }

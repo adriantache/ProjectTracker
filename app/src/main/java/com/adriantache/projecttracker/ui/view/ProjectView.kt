@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,11 +28,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +64,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.adriantache.projecttracker.domain.entity.Category
 import com.adriantache.projecttracker.ui.model.ProjectUi
 import com.adriantache.projecttracker.ui.model.TaskUi
 import com.adriantache.projecttracker.ui.theme.AccentTeal
@@ -78,8 +85,12 @@ import java.util.Locale
 fun ProjectView(
     modifier: Modifier = Modifier,
     project: ProjectUi,
+    allCategories: List<Category> = emptyList(),
     onBackClick: () -> Unit,
+    onEditProject: (String, String, Category) -> Unit,
     onAddTask: (String, String) -> Unit,
+    onEditTask: (String, String, String) -> Unit,
+    onDeleteTask: (String) -> Unit,
     onTaskToggle: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -87,6 +98,8 @@ fun ProjectView(
     var isAddingTask by remember { mutableStateOf(false) }
     var newTaskTitle by remember { mutableStateOf("") }
     var newTaskDescription by remember { mutableStateOf("") }
+    var showEditProjectDialog by remember { mutableStateOf(false) }
+    var editingTask by remember { mutableStateOf<TaskUi?>(null) }
 
     Scaffold(
         modifier = modifier
@@ -98,7 +111,8 @@ fun ProjectView(
                 title = project.name,
                 scrollBehavior = scrollBehavior,
                 onBackClick = onBackClick,
-                onRefresh = onRefresh
+                onRefresh = onRefresh,
+                onEdit = { showEditProjectDialog = true }
             )
         }
     ) { paddingValues ->
@@ -169,7 +183,9 @@ fun ProjectView(
                 items(notDoneTasks) { task ->
                     TaskItem(
                         task = task,
-                        onToggle = { onTaskToggle(task.id) }
+                        onToggle = { onTaskToggle(task.id) },
+                        onEdit = { editingTask = task },
+                        onDelete = { onDeleteTask(task.id) }
                     )
                 }
 
@@ -189,13 +205,166 @@ fun ProjectView(
                     items(doneTasks) { task ->
                         TaskItem(
                             task = task,
-                            onToggle = { onTaskToggle(task.id) }
+                            onToggle = { onTaskToggle(task.id) },
+                            onEdit = { editingTask = task },
+                            onDelete = { onDeleteTask(task.id) }
                         )
                     }
                 }
 
                 item {
                     Spacer(modifier = Modifier.height(100.dp))
+                }
+            }
+        }
+
+        if (showEditProjectDialog) {
+            AddProjectDialog(
+                categories = allCategories,
+                initialCategory = allCategories.find { it.name == project.categoryName },
+                initialName = project.name,
+                initialDescription = project.description,
+                isEdit = true,
+                onDismiss = { showEditProjectDialog = false },
+                onConfirm = { name, description, category ->
+                    onEditProject(name, description, category)
+                }
+            )
+        }
+
+        editingTask?.let { task ->
+            EditTaskDialog(
+                initialTitle = task.title,
+                initialDescription = task.description,
+                onDismiss = { editingTask = null },
+                onConfirm = { title, description ->
+                    onEditTask(task.id, title, description)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun EditTaskDialog(
+    initialTitle: String,
+    initialDescription: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit,
+) {
+    var title by remember { mutableStateOf(initialTitle) }
+    var description by remember { mutableStateOf(initialDescription) }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = CardDarkGrey),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .padding(24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(32.dp)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { focusManager.clearFocus() }
+                    )
+            ) {
+                Text(
+                    text = "EDIT TASK",
+                    fontFamily = InterFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentTeal,
+                    letterSpacing = 2.sp
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                BasicTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    textStyle = TextStyle(
+                        fontFamily = PlayfairFamily,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextCream
+                    ),
+                    cursorBrush = SolidColor(AccentTeal),
+                    decorationBox = { innerTextField ->
+                        if (title.isEmpty()) {
+                            Text(
+                                text = "Task Title",
+                                fontFamily = PlayfairFamily,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted.copy(alpha = 0.5f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                BasicTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(
+                        fontFamily = InterFamily,
+                        fontSize = 16.sp,
+                        color = TextMuted
+                    ),
+                    cursorBrush = SolidColor(AccentTeal),
+                    decorationBox = { innerTextField ->
+                        if (description.isEmpty()) {
+                            Text(
+                                text = "Task Description",
+                                fontFamily = InterFamily,
+                                fontSize = 16.sp,
+                                color = TextMuted.copy(alpha = 0.5f)
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("CANCEL", color = TextMuted)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Button(
+                        onClick = {
+                            if (title.isNotBlank()) {
+                                onConfirm(title, description)
+                                onDismiss()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal)
+                    ) {
+                        Text("SAVE CHANGES", color = BackgroundDark)
+                    }
                 }
             }
         }
@@ -391,49 +560,91 @@ fun AddTaskItem(
 fun TaskItem(
     task: TaskUi,
     onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
-    Card(
-        onClick = onToggle,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (task.isDone) SurfaceDark else CardDarkGrey
-        ),
-        modifier = Modifier.fillMaxWidth()
+    var showMenu by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Card(
+            onClick = onToggle,
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (task.isDone) SurfaceDark else CardDarkGrey
+            ),
+            modifier = Modifier.weight(1f)
         ) {
-            Icon(
-                imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                contentDescription = if (task.isDone) "Done" else "Not Done",
-                tint = if (task.isDone) AccentTeal else TextMuted,
-                modifier = Modifier.size(28.dp)
-            )
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            Column {
-                Text(
-                    text = task.title,
-                    fontFamily = PlayfairFamily,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (task.isDone) TextMuted else TextCream,
-                    textDecoration = if (task.isDone) TextDecoration.LineThrough else null
+            Row(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (task.isDone) "Done" else "Not Done",
+                    tint = if (task.isDone) AccentTeal else TextMuted,
+                    modifier = Modifier.size(28.dp)
                 )
-                if (task.description.isNotEmpty()) {
+
+                Spacer(modifier = Modifier.width(20.dp))
+
+                Column {
                     Text(
-                        text = task.description,
-                        fontFamily = InterFamily,
-                        fontSize = 14.sp,
-                        color = TextMuted,
-                        lineHeight = 20.sp,
-                        modifier = Modifier.padding(top = 4.dp)
+                        text = task.title,
+                        fontFamily = PlayfairFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (task.isDone) TextMuted else TextCream,
+                        textDecoration = if (task.isDone) TextDecoration.LineThrough else null
                     )
+                    if (task.description.isNotEmpty()) {
+                        Text(
+                            text = task.description,
+                            fontFamily = InterFamily,
+                            fontSize = 14.sp,
+                            color = TextMuted,
+                            lineHeight = 20.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Box {
+            IconButton(onClick = { showMenu = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Task Menu",
+                    tint = TextMuted
+                )
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                containerColor = SurfaceDark
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Edit", color = TextCream) },
+                    onClick = {
+                        onEdit()
+                        showMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete", color = TextCream) },
+                    onClick = {
+                        onDelete()
+                        showMenu = false
+                    }
+                )
             }
         }
     }
@@ -464,7 +675,10 @@ fun ProjectViewPreview() {
         ProjectView(
             project = sampleProject,
             onBackClick = {},
+            onEditProject = { _, _, _ -> },
             onAddTask = { _, _ -> },
+            onEditTask = { _, _, _ -> },
+            onDeleteTask = {},
             onTaskToggle = {},
             onRefresh = {},
         )

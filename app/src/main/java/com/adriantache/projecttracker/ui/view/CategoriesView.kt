@@ -40,11 +40,13 @@ fun CategoriesView(
     allCategories: List<Category> = emptyList(),
     onAddProject: (String, String, Category) -> Unit,
     onCategoryClick: (String) -> Unit,
+    onEditCategory: (String, String, String) -> Unit,
     onDeleteCategory: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf<CategoryUi?>(null) }
 
     Scaffold(
         modifier = modifier
@@ -94,7 +96,8 @@ fun CategoriesView(
                         footerText = category.numProjects.toString(),
                         index = index,
                         onClick = onCategoryClick,
-                        onDelete = onDeleteCategory
+                        onDelete = onDeleteCategory,
+                        onEdit = { editingCategory = category }
                     )
                 }
             }
@@ -104,7 +107,21 @@ fun CategoriesView(
             AddProjectDialog(
                 categories = allCategories,
                 onDismiss = { showAddDialog = false },
-                onAddProject = onAddProject
+                onConfirm = { name, description, category ->
+                    onAddProject(name, description, category)
+                }
+            )
+        }
+
+        editingCategory?.let { category ->
+            AddCategoryDialog(
+                initialName = category.name,
+                initialDescription = category.description,
+                isEdit = true,
+                onDismiss = { editingCategory = null },
+                onConfirm = { updatedCategory ->
+                    onEditCategory(category.id, updatedCategory.name, updatedCategory.description)
+                }
             )
         }
     }
@@ -129,6 +146,7 @@ fun CategoriesViewPreview() {
             categories = sampleCategories,
             onAddProject = { _, _, _ -> },
             onCategoryClick = {},
+            onEditCategory = { _, _, _ -> },
             onDeleteCategory = {},
             onRefresh = {},
         )

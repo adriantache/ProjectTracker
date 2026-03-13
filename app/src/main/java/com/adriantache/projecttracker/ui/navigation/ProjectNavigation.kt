@@ -69,6 +69,9 @@ fun ProjectNavigation(
                         onCategoryClick = { categoryId ->
                             currentState.onCategorySelected(categoryId)
                         },
+                        onEditCategory = { categoryId, name, description ->
+                            currentState.onEditCategory(categoryId, name, description)
+                        },
                         onDeleteCategory = { categoryId ->
                             currentState.onDeleteCategory(categoryId)
                         },
@@ -129,6 +132,9 @@ fun ProjectNavigation(
                         onProjectClick = { projectId ->
                             currentState.onProjectSelected(projectId)
                         },
+                        onEditProject = { projectId, name, description, category ->
+                            currentState.onEditProject(projectId, name, description, category)
+                        },
                         onDeleteProject = { projectId ->
                             currentState.onDeleteProject(projectId)
                         },
@@ -175,9 +181,13 @@ fun ProjectNavigation(
                 is ProjectState.TasksView -> {
                     ProjectView(
                         project = currentState.project.toUi(),
+                        allCategories = currentState.categories,
                         onBackClick = {
                             currentState.onBack()
                             navController.popBackStack()
+                        },
+                        onEditProject = { name, description, category ->
+                            currentState.onEditProject(name, description, category)
                         },
                         onTaskToggle = { taskId ->
                             val task = currentState.project.tasks[taskId]
@@ -187,6 +197,12 @@ fun ProjectNavigation(
                         },
                         onAddTask = { title, description ->
                             currentState.onAddTask(Task(title = title, description = description))
+                        },
+                        onEditTask = { taskId, title, description ->
+                            currentState.onEditTask(taskId, title, description)
+                        },
+                        onDeleteTask = { taskId ->
+                            currentState.onDeleteTask(taskId)
                         },
                         onRefresh = currentState.onRefresh
                     )

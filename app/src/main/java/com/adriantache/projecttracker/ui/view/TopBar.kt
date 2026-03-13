@@ -1,10 +1,15 @@
 package com.adriantache.projecttracker.ui.view
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,6 +20,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -23,6 +33,7 @@ import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.PlayfairFamily
+import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,8 +43,46 @@ fun MainTopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     onBackClick: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
 ) {
     val topBarInsets = WindowInsets(top = 32.dp)
+    var showMenu by remember { mutableStateOf(false) }
+
+    val actions: @Composable () -> Unit = {
+        if (onRefresh != null) {
+            IconButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = TextCream
+                )
+            }
+        }
+        if (onEdit != null) {
+            Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More",
+                        tint = TextCream
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    containerColor = SurfaceDark
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit", color = TextCream) },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        }
+                    )
+                }
+            }
+        }
+    }
 
     if (scrollBehavior != null) {
         LargeTopAppBar(
@@ -55,17 +104,7 @@ fun MainTopBar(
                     }
                 }
             },
-            actions = {
-                if (onRefresh != null) {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = TextCream
-                        )
-                    }
-                }
-            },
+            actions = { actions() },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
@@ -87,17 +126,7 @@ fun MainTopBar(
                     fontWeight = FontWeight.Bold
                 )
             },
-            actions = {
-                if (onRefresh != null) {
-                    IconButton(onClick = onRefresh) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = TextCream
-                        )
-                    }
-                }
-            },
+            actions = { actions() },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
