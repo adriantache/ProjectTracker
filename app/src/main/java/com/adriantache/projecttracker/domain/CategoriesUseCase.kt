@@ -34,7 +34,7 @@ class CategoriesUseCase @Inject constructor(
 
     var projects = emptyList<Project>()
     val categories: List<Category>
-        get() = projects.filter { !it.isCompleted }.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
+        get() = projects.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
 
     private fun onInit() {
         Log.d("CategoriesUseCase", "onInit triggered")
@@ -107,13 +107,11 @@ class CategoriesUseCase @Inject constructor(
 
     private fun showCategories() {
         val activeProjects = projects.filter { !it.isCompleted }
-        val completedProjects = projects.filter { it.isCompleted }.sortedByDescending { it.completionTimestamp }
         val projectCounts = activeProjects.groupBy { it.category.id }.mapValues { it.value.size }
 
         state.value = CategoryView(
             categories = categories,
             projectCounts = projectCounts,
-            completedProjects = completedProjects,
             onCategorySelected = ::onCategorySelected,
             onProjectSelected = ::onProjectSelected,
             onEditCategory = ::onEditCategory,
@@ -135,14 +133,17 @@ class CategoriesUseCase @Inject constructor(
         val targetCategory = categories.find { it.id == categoryId }
 
         val filteredProjects = if (targetCategory != null) {
-            projects.filter { it.category.id == targetCategory.id && !it.isCompleted }
+            projects.filter { it.category.id == targetCategory.id }
         } else {
             emptyList()
         }
+        val pendingProjects = filteredProjects.filter { !it.isCompleted }.sortedBy { it.name }
+        val completedProjects = filteredProjects.filter { it.isCompleted }.sortedByDescending { it.completionTimestamp }
 
         state.value = ProjectsView(
             category = targetCategory ?: Category(id = categoryId, name = "Unknown", description = ""),
-            projects = filteredProjects,
+            pendingProjects = pendingProjects,
+            completedProjects = completedProjects,
             categories = categories,
             onProjectSelected = ::onProjectSelected,
             onEditProject = ::onEditProject,

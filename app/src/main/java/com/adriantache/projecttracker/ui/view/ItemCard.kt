@@ -4,10 +4,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +61,7 @@ fun ItemCard(
         colors = CardDefaults.cardColors(containerColor = myCardColors(index)),
         modifier = modifier
             .fillMaxWidth()
+            .defaultMinSize(200.dp)
             .height(240.dp)
     ) {
         Column(
@@ -126,14 +128,13 @@ fun ItemCard(
                 fontSize = 14.sp,
                 color = TextMuted,
                 lineHeight = 20.sp,
-                modifier = Modifier.padding(end = endPadding + 32.dp),
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(end = endPadding + 32.dp)
+                    .weight(1f),
             )
 
-            Spacer(
-                modifier = Modifier
-                    .weight(1f)
-                    .requiredHeightIn(8.dp)
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 modifier = Modifier
@@ -159,7 +160,10 @@ fun ItemCardPreview() {
             ItemCard(
                 id = "1",
                 title = "Sample Project",
-                description = "This is a sample project description to test the ItemCard layout and see how it looks.",
+                description = "This is a sample project description to test the ItemCard layout and see how it looks." +
+                        "This is a sample project description to test the ItemCard layout and see how it looks." +
+                        "This is a sample project description to test the ItemCard layout and see how it looks." +
+                        "This is a sample project description to test the ItemCard layout and see how it looks.",
                 footerText = "5",
                 index = 0,
                 onClick = {},

@@ -47,7 +47,7 @@ fun ProjectNavigation(
         startDestination = Screen.Categories.route,
         modifier = modifier
     ) {
-        composable(Screen.Categories.route) {
+        composable(Screen.Categories.route) { _ ->
             when (val currentState = state) {
                 is ProjectState.Init, ProjectState.Loading -> LoadingView()
 
@@ -56,7 +56,6 @@ fun ProjectNavigation(
                         categories = currentState.categories.map {
                             it.toUi(currentState.projectCounts[it.id] ?: 0)
                         },
-                        completedProjects = currentState.completedProjects.map { it.toUi() },
                         allCategories = currentState.categories,
                         onAddProject = { name, description, category ->
                             currentState.onAddProject(
@@ -69,9 +68,6 @@ fun ProjectNavigation(
                         },
                         onCategoryClick = { categoryId ->
                             currentState.onCategorySelected(categoryId)
-                        },
-                        onProjectClick = { projectId ->
-                            currentState.onProjectSelected(projectId)
                         },
                         onEditCategory = { categoryId, name, description ->
                             currentState.onEditCategory(categoryId, name, description)
@@ -103,7 +99,7 @@ fun ProjectNavigation(
             }
         }
 
-        composable(Screen.Projects.route) {
+        composable(Screen.Projects.route) { _ ->
             val currentState = state
 
             // Sync system back button with UseCase state
@@ -118,7 +114,8 @@ fun ProjectNavigation(
                 is ProjectState.ProjectsView -> {
                     ProjectsView(
                         category = currentState.category,
-                        projects = currentState.projects.map { it.toUi() },
+                        projects = currentState.pendingProjects.map { it.toUi() },
+                        completedProjects = currentState.completedProjects.map { it.toUi() },
                         allCategories = currentState.categories,
                         onBackClick = {
                             currentState.onBack()

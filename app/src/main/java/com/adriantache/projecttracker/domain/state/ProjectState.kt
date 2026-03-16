@@ -10,7 +10,6 @@ sealed interface ProjectState {
     data class CategoryView(
         val categories: List<Category>,
         val projectCounts: Map<String, Int>,
-        val completedProjects: List<Project>,
         val onCategorySelected: (String) -> Unit,
         val onProjectSelected: (String) -> Unit,
         val onEditCategory: (String, String, String) -> Unit,
@@ -21,7 +20,8 @@ sealed interface ProjectState {
 
     data class ProjectsView(
         val category: Category,
-        val projects: List<Project>,
+        val pendingProjects: List<Project>,
+        val completedProjects: List<Project>,
         val categories: List<Category>,
         val onProjectSelected: (String) -> Unit,
         val onEditProject: (String, String, String, Category) -> Unit,

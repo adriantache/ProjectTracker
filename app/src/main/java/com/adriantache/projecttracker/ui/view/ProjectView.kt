@@ -1,14 +1,10 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -21,7 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,34 +30,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -80,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.adriantache.projecttracker.R
 import com.adriantache.projecttracker.domain.entity.Category
 import com.adriantache.projecttracker.ui.model.ProjectUi
 import com.adriantache.projecttracker.ui.model.TaskUi
@@ -92,12 +86,11 @@ import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 import com.adriantache.projecttracker.ui.theme.TextMuted
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import java.util.Locale
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,7 +195,7 @@ fun ProjectView(
                     )
                 }
 
-                items(notDoneTasks) { task ->
+                items(notDoneTasks, key = { it.id }) { task ->
                     TaskItem(
                         task = task,
                         onToggle = { onTaskToggle(task.id) },
@@ -224,7 +217,7 @@ fun ProjectView(
                         )
                     }
 
-                    items(doneTasks) { task ->
+                    items(doneTasks, key = { it.id }) { task ->
                         TaskItem(
                             task = task,
                             onToggle = { onTaskToggle(task.id) },
@@ -336,66 +329,32 @@ fun ProjectView(
 
 @Composable
 fun CompletionAnimation(onAnimationFinished: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    val scale = remember { Animatable(0f) }
-    val alpha = remember { Animatable(0f) }
-    val starScale = remember { Animatable(0f) }
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.success))
+    val progress by animateLottieCompositionAsState(
+        composition = composition,
+        iterations = 1
+    )
 
-    LaunchedEffect(Unit) {
-        scope.launch {
-            scale.animateTo(1.2f, tween(500, easing = FastOutSlowInEasing))
-            scale.animateTo(1f, tween(200))
-        }
-        scope.launch {
-            alpha.animateTo(1f, tween(300))
-            delay(1500)
-            alpha.animateTo(0f, tween(500))
+    LaunchedEffect(progress) {
+        if (progress == 1f) {
             onAnimationFinished()
-        }
-        scope.launch {
-            delay(400)
-            starScale.animateTo(1f, tween(600, easing = FastOutSlowInEasing))
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f * alpha.value)),
+            .background(Color.Black.copy(alpha = 0.7f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .scale(scale.value)
-                .alpha(alpha.value)
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Canvas(modifier = Modifier.size(200.dp)) {
-                    drawCircle(color = AccentTeal.copy(alpha = 0.2f), radius = size.minDimension / 1.5f)
-                }
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    tint = AccentTeal,
-                    modifier = Modifier.size(120.dp)
-                )
-
-                // Random stars around
-                repeat(8) { i ->
-                    val angle = (i * 45).toDouble()
-                    val radius = 100.dp
-                    StarIcon(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .offset(
-                                x = (cos(Math.toRadians(angle)) * radius.value).dp,
-                                y = (sin(Math.toRadians(angle)) * radius.value).dp
-                            )
-                            .scale(starScale.value * (0.5f + Random.nextFloat() * 0.5f))
-                    )
-                }
-            }
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(300.dp)
+            )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "CONGRATULATIONS!",
@@ -414,16 +373,6 @@ fun CompletionAnimation(onAnimationFinished: () -> Unit) {
             )
         }
     }
-}
-
-@Composable
-fun StarIcon(modifier: Modifier = Modifier) {
-    Icon(
-        imageVector = Icons.Default.Star,
-        contentDescription = null,
-        tint = Color(0xFFFFD700),
-        modifier = modifier.size(24.dp)
-    )
 }
 
 @Composable
@@ -737,6 +686,7 @@ fun AddTaskItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskItem(
     task: TaskUi,
@@ -744,91 +694,113 @@ fun TaskItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
+    val dismissState = rememberSwipeToDismissBoxState()
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Card(
-            onClick = onToggle,
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (task.isDone) SurfaceDark else CardDarkGrey
-            ),
-            modifier = Modifier.weight(1f)
-        ) {
-            Row(
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            val value = dismissState.currentValue
+            // Immediately snap back to settled state to avoid item being stuck in dismissed position
+            // especially if the action doesn't remove it from the list immediately or shows a dialog.
+            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> onEdit()
+                SwipeToDismissBoxValue.EndToStart -> onDelete()
+                else -> {}
+            }
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+            val color = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> AccentTeal.copy(alpha = 0.2f)
+                SwipeToDismissBoxValue.EndToStart -> Color.Red.copy(alpha = 0.2f)
+                else -> Color.Transparent
+            }
+            val alignment = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                else -> Alignment.Center
+            }
+            val icon = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
+                SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                else -> null
+            }
+            val tint = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> AccentTeal
+                SwipeToDismissBoxValue.EndToStart -> Color.Red
+                else -> Color.Transparent
+            }
+
+            Box(
                 modifier = Modifier
-                    .padding(20.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .background(color, shape = RoundedCornerShape(16.dp))
+                    .padding(horizontal = 24.dp),
+                contentAlignment = alignment
             ) {
-                Icon(
-                    imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                    contentDescription = if (task.isDone) "Done" else "Not Done",
-                    tint = if (task.isDone) AccentTeal else TextMuted,
-                    modifier = Modifier.size(28.dp)
-                )
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                Column {
-                    Text(
-                        text = task.title,
-                        fontFamily = PlayfairFamily,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (task.isDone) TextMuted else TextCream,
-                        textDecoration = if (task.isDone) TextDecoration.LineThrough else null
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(28.dp)
                     )
-                    if (task.description.isNotEmpty()) {
+                }
+            }
+        },
+        content = {
+            Card(
+                onClick = onToggle,
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (task.isDone) SurfaceDark else CardDarkGrey
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                        contentDescription = if (task.isDone) "Done" else "Not Done",
+                        tint = if (task.isDone) AccentTeal else TextMuted,
+                        modifier = Modifier.size(28.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    Column {
                         Text(
-                            text = task.description,
-                            fontFamily = InterFamily,
-                            fontSize = 14.sp,
-                            color = TextMuted,
-                            lineHeight = 20.sp,
-                            modifier = Modifier.padding(top = 4.dp)
+                            text = task.title,
+                            fontFamily = PlayfairFamily,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (task.isDone) TextMuted else TextCream,
+                            textDecoration = if (task.isDone) TextDecoration.LineThrough else null
                         )
+                        if (task.description.isNotEmpty()) {
+                            Text(
+                                text = task.description,
+                                fontFamily = InterFamily,
+                                fontSize = 14.sp,
+                                color = TextMuted,
+                                lineHeight = 20.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Box {
-            IconButton(onClick = { showMenu = true }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Task Menu",
-                    tint = TextMuted
-                )
-            }
-
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false },
-                containerColor = SurfaceDark
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Edit", color = TextCream) },
-                    onClick = {
-                        onEdit()
-                        showMenu = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Delete", color = TextCream) },
-                    onClick = {
-                        onDelete()
-                        showMenu = false
-                    }
-                )
-            }
-        }
-    }
+    )
 }
 
 @Preview(widthDp = 1280, heightDp = 800)
