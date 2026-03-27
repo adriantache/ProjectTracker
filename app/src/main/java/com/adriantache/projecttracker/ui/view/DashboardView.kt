@@ -37,12 +37,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adriantache.projecttracker.domain.entity.Category
 import com.adriantache.projecttracker.ui.model.ProjectUi
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
+import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SecondaryGray
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -289,6 +291,52 @@ fun CategoryChip(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             color = Color.White,
             fontSize = 14.sp
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFF121212, widthDp = 1280, heightDp = 800)
+@Composable
+fun DashboardPreview() {
+    ProjectTrackerTheme {
+        DashboardView(
+            totalProjects = 12,
+            pendingProjectsCount = 4,
+            completedProjectsCount = 8,
+            recentProjects = listOf(
+                ProjectUi(
+                    id = "1",
+                    name = "Project Tracker App",
+                    description = "Mobile app development",
+                    category = Category(name = "Mobile", description = ""),
+                    tasksText = "3/5 tasks",
+                    tasks = emptyList(),
+                    progress = 0.6f,
+                    isCompleted = false,
+                    canBeCompleted = false
+                ),
+                ProjectUi(
+                    id = "2",
+                    name = "Personal Website",
+                    description = "Portfolio site",
+                    category = Category(name = "Web", description = ""),
+                    tasksText = "8/10 tasks",
+                    tasks = emptyList(),
+                    progress = 0.8f,
+                    isCompleted = false,
+                    canBeCompleted = false
+                )
+            ),
+            categories = listOf(
+                Category(name = "All", description = ""),
+                Category(name = "Mobile", description = ""),
+                Category(name = "Web", description = ""),
+                Category(name = "Design", description = "")
+            ),
+            onProjectClick = {},
+            onCategoryClick = {},
+            onViewAllCategories = {},
+            onRefresh = {}
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
@@ -28,11 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.PlayfairFamily
+import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SurfaceDark
 import com.adriantache.projecttracker.ui.theme.TextCream
 
@@ -48,7 +51,19 @@ fun MainTopBar(
     val topBarInsets = WindowInsets(top = 32.dp)
     var showMenu by remember { mutableStateOf(false) }
 
-    val actions: @Composable () -> Unit = {
+    val navigationIcon: @Composable () -> Unit = {
+        if (onBackClick != null) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = TextCream
+                )
+            }
+        }
+    }
+
+    val actions: @Composable RowScope.() -> Unit = {
         if (onRefresh != null) {
             IconButton(onClick = onRefresh) {
                 Icon(
@@ -93,18 +108,8 @@ fun MainTopBar(
                     style = MaterialTheme.typography.displayLarge.copy(fontSize = fontSize)
                 )
             },
-            navigationIcon = {
-                if (onBackClick != null) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextCream
-                        )
-                    }
-                }
-            },
-            actions = { actions() },
+            navigationIcon = navigationIcon,
+            actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
@@ -114,7 +119,7 @@ fun MainTopBar(
             ),
             scrollBehavior = scrollBehavior,
             windowInsets = topBarInsets,
-            modifier = Modifier.padding(start = 32.dp),
+            modifier = Modifier.padding(start = if (onBackClick == null) 32.dp else 0.dp),
         )
     } else {
         TopAppBar(
@@ -126,7 +131,8 @@ fun MainTopBar(
                     fontWeight = FontWeight.Bold
                 )
             },
-            actions = { actions() },
+            navigationIcon = navigationIcon,
+            actions = actions,
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = BackgroundDark,
                 scrolledContainerColor = BackgroundDark,
@@ -135,7 +141,34 @@ fun MainTopBar(
                 actionIconContentColor = TextCream
             ),
             windowInsets = topBarInsets,
-            modifier = Modifier.padding(start = 32.dp),
+            modifier = Modifier.padding(start = if (onBackClick == null) 32.dp else 0.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(widthDp = 1280, heightDp = 800)
+@Composable
+fun MainTopBarPreview() {
+    ProjectTrackerTheme {
+        MainTopBar(
+            title = "Dashboard",
+            onRefresh = {},
+            onEdit = {}
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(widthDp = 1280, heightDp = 800)
+@Composable
+fun MainTopBarBackPreview() {
+    ProjectTrackerTheme {
+        MainTopBar(
+            title = "Project Details",
+            onBackClick = {},
+            onRefresh = {},
+            onEdit = {}
         )
     }
 }
