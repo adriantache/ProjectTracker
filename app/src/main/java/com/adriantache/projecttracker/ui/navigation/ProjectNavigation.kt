@@ -15,6 +15,7 @@ import com.adriantache.projecttracker.domain.entity.Task
 import com.adriantache.projecttracker.domain.state.ProjectState
 import com.adriantache.projecttracker.ui.model.toUi
 import com.adriantache.projecttracker.ui.view.CategoriesView
+import com.adriantache.projecttracker.ui.view.DashboardView
 import com.adriantache.projecttracker.ui.view.ErrorView
 import com.adriantache.projecttracker.ui.view.LoadingView
 import com.adriantache.projecttracker.ui.view.ProjectView
@@ -22,6 +23,7 @@ import com.adriantache.projecttracker.ui.view.ProjectsView
 import com.adriantache.projecttracker.ui.viewModel.ProjectsViewModel
 
 sealed class Screen(val route: String) {
+    data object Dashboard : Screen("dashboard")
     data object Categories : Screen("categories")
     data object Projects : Screen("projects")
     data object ProjectDetails : Screen("project")
@@ -44,11 +46,61 @@ fun ProjectNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Categories.route,
+        startDestination = Screen.Dashboard.route,
         modifier = modifier
     ) {
-        composable(Screen.Categories.route) { _ ->
+        composable(Screen.Dashboard.route) {
             when (val currentState = state) {
+                is ProjectState.Init, ProjectState.Loading -> LoadingView()
+
+                is ProjectState.DashboardView -> {
+                    DashboardView(
+                        totalProjects = currentState.totalProjects,
+                        pendingProjectsCount = currentState.pendingProjectsCount,
+                        completedProjectsCount = currentState.completedProjectsCount,
+                        recentProjects = currentState.recentProjects.map { it.toUi() },
+                        categories = currentState.categories,
+                        onProjectClick = currentState.onProjectSelected,
+                        onCategoryClick = currentState.onCategorySelected,
+                        onViewAllCategories = currentState.onViewAllCategories,
+                        onRefresh = currentState.onRefresh
+                    )
+                }
+
+                is ProjectState.Error -> ErrorView(currentState.message)
+
+                is ProjectState.CategoryView -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Categories.route)
+                    }
+                }
+
+                is ProjectState.ProjectsView -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.Projects.route)
+                    }
+                }
+
+                is ProjectState.TasksView -> {
+                    LaunchedEffect(Unit) {
+                        navController.navigate(Screen.ProjectDetails.route)
+                    }
+                }
+            }
+        }
+
+        composable(Screen.Categories.route) {
+            val currentState = state
+
+            BackHandler {
+                if (currentState is ProjectState.CategoryView) {
+                    // Logic to go back to dashboard if needed, 
+                    // or just let navController handle it
+                }
+                navController.popBackStack()
+            }
+
+            when (currentState) {
                 is ProjectState.Init, ProjectState.Loading -> LoadingView()
 
                 is ProjectState.CategoryView -> {
@@ -80,6 +132,12 @@ fun ProjectNavigation(
                 }
 
                 is ProjectState.Error -> ErrorView(currentState.message)
+
+                is ProjectState.DashboardView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Dashboard.route, false)
+                    }
+                }
 
                 is ProjectState.ProjectsView -> {
                     LaunchedEffect(Unit) {
@@ -147,6 +205,12 @@ fun ProjectNavigation(
 
                 is ProjectState.Error -> ErrorView(currentState.message)
 
+                is ProjectState.DashboardView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Dashboard.route, false)
+                    }
+                }
+
                 is ProjectState.CategoryView -> {
                     LaunchedEffect(Unit) {
                         navController.popBackStack(Screen.Categories.route, false)
@@ -162,7 +226,7 @@ fun ProjectNavigation(
                 }
 
                 is ProjectState.Init -> LaunchedEffect(Unit) {
-                    navController.popBackStack(Screen.Categories.route, false)
+                    navController.popBackStack(Screen.Dashboard.route, false)
                 }
             }
         }
@@ -215,6 +279,12 @@ fun ProjectNavigation(
                 ProjectState.Loading -> LoadingView()
 
                 is ProjectState.Error -> ErrorView(currentState.message)
+
+                is ProjectState.DashboardView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Dashboard.route, false)
+                    }
+                }
 
                 is ProjectState.ProjectsView -> {
                     LaunchedEffect(Unit) {

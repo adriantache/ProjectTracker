@@ -229,7 +229,7 @@ fun ProjectsView(
             editingProject?.let { project ->
                 AddProjectDialog(
                     categories = allCategories,
-                    initialCategory = allCategories.find { it.name == project.categoryName } ?: category,
+                    initialCategory = allCategories.find { it.id == project.category.id } ?: category,
                     initialName = project.name,
                     initialDescription = project.description,
                     isEdit = true,
@@ -256,7 +256,8 @@ fun ProjectsViewPreview() {
             description = "Description for project $index",
             tasksText = "$index/20",
             tasks = emptyList(),
-            categoryName = "Test",
+            category = Category(id = "Test", name = "Test", description = ""),
+            progress = 0f,
             isCompleted = isCompleted,
             canBeCompleted = true
         )

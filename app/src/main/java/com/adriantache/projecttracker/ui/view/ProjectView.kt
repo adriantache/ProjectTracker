@@ -308,7 +308,7 @@ fun ProjectView(
         if (showEditProjectDialog) {
             AddProjectDialog(
                 categories = allCategories,
-                initialCategory = allCategories.find { it.name == project.categoryName },
+                initialCategory = allCategories.find { it.id == project.category.id },
                 initialName = project.name,
                 initialDescription = project.description,
                 isEdit = true,
@@ -799,7 +799,7 @@ fun ProjectViewPreview() {
         name = "Deep Learning Research",
         description = "A comprehensive study on transformer architectures and their efficiency in edge computing environments. This includes testing various quantization methods and pruning strategies.",
         tasksText = "3/8",
-        categoryName = "category",
+        category = Category(id = "category", name = "Research", description = "Deep learning research"),
         tasks = listOf(
             TaskUi("1", "Literature Review", "Read key papers on BERT and GPT-3", true),
             TaskUi("2", "Setup Environment", "Configure CUDA and PyTorch on server", true),
@@ -810,6 +810,7 @@ fun ProjectViewPreview() {
             TaskUi("7", "Quantization Experiments", "Test 8-bit and 4-bit quantization", false),
             TaskUi("8", "Final Report", "Document all findings and results", false),
         ),
+        progress = 0.375f,
         isCompleted = false,
         canBeCompleted = false
     )

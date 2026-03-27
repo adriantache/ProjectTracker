@@ -75,6 +75,7 @@ val SurfaceDark = Color(0xFF1E1E1E)
 val TextCream = Color(0xFFE5D5C0)
 val TextMuted = Color(0xFFB5A897)
 val AccentTeal = Color(0xFF4DB6AC)
+val SecondaryGray = Color(0xFF757575)
 
 // Card Specific Colors (not part of standard Scheme, but used in theme)
 val CardGreen = Color(0xFF2D3E33)

@@ -7,6 +7,7 @@ import com.adriantache.projecttracker.domain.entity.Project
 import com.adriantache.projecttracker.domain.entity.Task
 import com.adriantache.projecttracker.domain.state.ProjectState
 import com.adriantache.projecttracker.domain.state.ProjectState.CategoryView
+import com.adriantache.projecttracker.domain.state.ProjectState.DashboardView
 import com.adriantache.projecttracker.domain.state.ProjectState.Init
 import com.adriantache.projecttracker.domain.state.ProjectState.Loading
 import com.adriantache.projecttracker.domain.state.ProjectState.ProjectsView
@@ -65,8 +66,8 @@ class CategoriesUseCase @Inject constructor(
                 // Always ensure we transition out of loading after some time if no data came from DB
                 delay(500) // Give a moment for the DB emission to trigger updateStateWithNewData
                 if (state.value is Loading) {
-                    Log.d("CategoriesUseCase", "Forcing transition from Loading to CategoryView")
-                    showCategories()
+                    Log.d("CategoriesUseCase", "Forcing transition from Loading to DashboardView")
+                    showDashboard()
                 }
             }
         }
@@ -74,6 +75,8 @@ class CategoriesUseCase @Inject constructor(
 
     private fun updateStateWithNewData(oldList: List<Project> = emptyList(), newList: List<Project>) {
         when (val currentState = state.value) {
+            is DashboardView -> showDashboard()
+
             is CategoryView -> showCategories()
 
             is ProjectsView -> {
@@ -84,7 +87,7 @@ class CategoriesUseCase @Inject constructor(
                 if (categoryId != null) {
                     onCategorySelected(categoryId)
                 } else {
-                    showCategories()
+                    showDashboard()
                 }
             }
 
@@ -94,14 +97,39 @@ class CategoriesUseCase @Inject constructor(
                 if (updatedProject != null) {
                     onProjectSelected(currentProjectId)
                 } else {
-                    showCategories()
+                    showDashboard()
                 }
             }
 
             is Loading, is ProjectState.Error, is Init -> {
                 // Transition to main view as soon as we have any response from DB
-                showCategories()
+                showDashboard()
             }
+        }
+    }
+
+    private fun showDashboard() {
+        val pendingProjects = projects.filter { !it.isCompleted }.sortedBy { it.name }
+        val completedProjects = projects.filter { it.isCompleted }
+
+        state.value = DashboardView(
+            totalProjects = projects.size,
+            pendingProjectsCount = pendingProjects.size,
+            completedProjectsCount = completedProjects.size,
+            recentProjects = pendingProjects.take(5),
+            categories = categories,
+            onProjectSelected = ::onProjectSelected,
+            onCategorySelected = ::onCategorySelected,
+            onViewAllCategories = ::showCategories,
+            onRefresh = ::onRefreshDashboard,
+        )
+    }
+
+    private fun onRefreshDashboard() {
+        scope.launch {
+            state.value = Loading
+            repository.fetchProjects()
+            if (state.value is Loading) showDashboard()
         }
     }
 
@@ -163,7 +191,7 @@ class CategoriesUseCase @Inject constructor(
     private fun onProjectSelected(projectId: String) {
         val project = projects.find { it.id == projectId }
         if (project == null) {
-            showCategories()
+            showDashboard()
             return
         }
 
@@ -178,7 +206,7 @@ class CategoriesUseCase @Inject constructor(
             onCompleteProject = { onCompleteProject(projectId) },
             onBack = {
                 if (project.isCompleted) {
-                    showCategories()
+                    showDashboard()
                 } else {
                     onCategorySelected(project.category.id)
                 }
@@ -243,7 +271,7 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             val projectsToDelete = projects.filter { it.category.id == categoryId }
             projectsToDelete.forEach { repository.deleteProject(it.id) }
-            if (state.value is Loading) showCategories()
+            if (state.value is Loading) showDashboard()
         }
     }
 

@@ -11,16 +11,23 @@ fun Category.toUi(numProjects: Int): CategoryUi = CategoryUi(
     numProjects = numProjects
 )
 
-fun Project.toUi(): ProjectUi = ProjectUi(
-    id = id,
-    name = name,
-    description = description,
-    categoryName = category.name,
-    tasksText = "${tasks.values.count { it.isDone }}/${tasks.size}",
-    tasks = tasks.values.sortedByDescending { it.timestamp }.map { it.toUi() },
-    isCompleted = isCompleted,
-    canBeCompleted = !isCompleted && isDone && tasks.isNotEmpty()
-)
+fun Project.toUi(): ProjectUi {
+    val doneTasks = tasks.values.count { it.isDone }
+    val totalTasks = tasks.size
+    val progress = if (totalTasks > 0) doneTasks.toFloat() / totalTasks else 0f
+
+    return ProjectUi(
+        id = id,
+        name = name,
+        description = description,
+        category = category,
+        tasksText = "$doneTasks/$totalTasks",
+        tasks = tasks.values.sortedByDescending { it.timestamp }.map { it.toUi() },
+        progress = progress,
+        isCompleted = isCompleted,
+        canBeCompleted = !isCompleted && isDone && tasks.isNotEmpty()
+    )
+}
 
 fun Task.toUi(): TaskUi = TaskUi(
     id = id,

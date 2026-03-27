@@ -7,6 +7,19 @@ import com.adriantache.projecttracker.domain.entity.Task
 sealed interface ProjectState {
     data class Init(val onInit: () -> Unit) : ProjectState
     data object Loading : ProjectState
+
+    data class DashboardView(
+        val totalProjects: Int,
+        val pendingProjectsCount: Int,
+        val completedProjectsCount: Int,
+        val recentProjects: List<Project>,
+        val categories: List<Category>,
+        val onProjectSelected: (String) -> Unit,
+        val onCategorySelected: (String) -> Unit,
+        val onViewAllCategories: () -> Unit,
+        val onRefresh: () -> Unit,
+    ) : ProjectState
+
     data class CategoryView(
         val categories: List<Category>,
         val projectCounts: Map<String, Int>,
