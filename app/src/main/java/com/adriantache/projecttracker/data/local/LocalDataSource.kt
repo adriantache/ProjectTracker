@@ -32,6 +32,10 @@ class LocalDataSource @Inject constructor(
 
             projectDao.upsertProject(newProject.toEntity(timestamp))
 
+            // Reconcile tasks for this project
+            val taskIds = newProject.tasks.keys.toList()
+            taskDao.deleteTasksForProjectExcept(newProject.id, taskIds)
+
             newProject.tasks.values.forEach { task ->
                 taskDao.upsertTask(task.toEntity(newProject.id, timestamp))
             }
