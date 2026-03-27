@@ -29,6 +29,7 @@ sealed interface ProjectState {
         val onDeleteCategory: (String) -> Unit,
         val onRefresh: () -> Unit,
         val onAddProject: (Project) -> Unit,
+        val onBack: () -> Unit,
     ) : ProjectState
 
     data class ProjectsView(

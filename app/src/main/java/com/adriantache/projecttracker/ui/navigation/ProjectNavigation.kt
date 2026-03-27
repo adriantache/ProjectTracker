@@ -94,8 +94,7 @@ fun ProjectNavigation(
 
             BackHandler {
                 if (currentState is ProjectState.CategoryView) {
-                    // Logic to go back to dashboard if needed, 
-                    // or just let navController handle it
+                    currentState.onBack()
                 }
                 navController.popBackStack()
             }
@@ -126,6 +125,10 @@ fun ProjectNavigation(
                         },
                         onDeleteCategory = { categoryId ->
                             currentState.onDeleteCategory(categoryId)
+                        },
+                        onBackClick = {
+                            currentState.onBack()
+                            navController.popBackStack()
                         },
                         onRefresh = currentState.onRefresh
                     )

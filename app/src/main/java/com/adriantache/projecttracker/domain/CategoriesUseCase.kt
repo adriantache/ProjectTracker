@@ -146,6 +146,7 @@ class CategoriesUseCase @Inject constructor(
             onDeleteCategory = ::onDeleteCategory,
             onRefresh = ::onRefreshCategories,
             onAddProject = ::onAddProject,
+            onBack = ::showDashboard,
         )
     }
 

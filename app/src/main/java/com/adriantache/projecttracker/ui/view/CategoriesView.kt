@@ -44,6 +44,7 @@ fun CategoriesView(
     onCategoryClick: (String) -> Unit,
     onEditCategory: (String, String, String) -> Unit,
     onDeleteCategory: (String) -> Unit,
+    onBackClick: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val currentOnRefresh by rememberUpdatedState(onRefresh)
@@ -67,6 +68,7 @@ fun CategoriesView(
             MainTopBar(
                 title = "Categories",
                 scrollBehavior = scrollBehavior,
+                onBackClick = onBackClick,
                 onRefresh = onRefresh
             )
         },
@@ -160,6 +162,7 @@ fun CategoriesViewPreview() {
             onCategoryClick = {},
             onEditCategory = { _, _, _ -> },
             onDeleteCategory = {},
+            onBackClick = {},
             onRefresh = {},
         )
     }
