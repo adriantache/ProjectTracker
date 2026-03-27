@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.adriantache.projecttracker.R
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.InterFamily
@@ -83,6 +85,7 @@ private fun AuthContent(
     val credentialManager = remember { CredentialManager.create(context) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val serverClientId = stringResource(R.string.server_client_id)
 
     Column(
         modifier = modifier
@@ -121,9 +124,9 @@ private fun AuthContent(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        if (errorMessage != null) {
+        errorMessage?.let {
             Text(
-                text = errorMessage!!,
+                text = it,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
                 fontSize = 14.sp,
@@ -142,7 +145,7 @@ private fun AuthContent(
                     scope.launch {
                         try {
                             val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(
-                                serverClientId = "831857688316-bvknta1vgnajr6vf9di3pol97bee44tl.apps.googleusercontent.com"
+                                serverClientId = serverClientId
                             ).build()
 
                             val request = GetCredentialRequest.Builder()
@@ -158,7 +161,6 @@ private fun AuthContent(
                             if (credential is CustomCredential &&
                                 credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
                             ) {
-
                                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
                                 val idToken = googleIdTokenCredential.idToken
                                 val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
@@ -168,7 +170,8 @@ private fun AuthContent(
                                         errorMessage = task.exception?.message ?: "Firebase authentication failed"
                                         isLoading = false
                                     }
-                                    // Success is handled by AuthViewModel's AuthStateListener
+                                    // On success, AuthViewModel.currentUser updates, 
+                                    // recomposing AuthView and removing AuthContent.
                                 }
                             } else {
                                 errorMessage = "Unexpected credential type received"
