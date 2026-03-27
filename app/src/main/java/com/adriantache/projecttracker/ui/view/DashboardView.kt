@@ -61,7 +61,6 @@ import com.adriantache.projecttracker.ui.theme.SecondaryGray
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardView(
-    totalProjects: Int,
     pendingProjectsCount: Int,
     completedProjectsCount: Int,
     projectsCompletedThisWeek: Int,
@@ -95,7 +94,6 @@ fun DashboardView(
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             // Stats Section
             item {
@@ -173,6 +171,7 @@ fun DashboardView(
 
             // Recent Projects
             item {
+                Spacer(modifier = Modifier.height(24.dp))
                 SectionHeader(
                     title = "Recent Projects",
                     onActionClick = null
@@ -192,16 +191,18 @@ fun DashboardView(
                     project = project,
                     onClick = { onProjectClick(project.id) }
                 )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // Categories
             item {
+                Spacer(modifier = Modifier.height(24.dp))
+
                 SectionHeader(
                     title = "Categories",
                     actionText = "View All",
                     onActionClick = onViewAllCategories
                 )
-                Spacer(modifier = Modifier.height(8.dp))
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
@@ -228,7 +229,7 @@ fun StatCard(
     color: Color,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.height(110.dp),
         colors = CardDefaults.cardColors(
             containerColor = SecondaryGray.copy(alpha = 0.1f)
         ),
@@ -390,7 +391,6 @@ fun CategoryChip(
 fun DashboardPreview() {
     ProjectTrackerTheme {
         DashboardView(
-            totalProjects = 12,
             pendingProjectsCount = 4,
             completedProjectsCount = 8,
             projectsCompletedThisWeek = 2,

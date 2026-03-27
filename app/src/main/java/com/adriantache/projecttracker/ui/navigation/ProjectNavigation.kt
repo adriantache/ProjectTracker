@@ -55,7 +55,6 @@ fun ProjectNavigation(
 
                 is ProjectState.DashboardView -> {
                     DashboardView(
-                        totalProjects = currentState.totalProjects,
                         pendingProjectsCount = currentState.pendingProjectsCount,
                         completedProjectsCount = currentState.completedProjectsCount,
                         projectsCompletedThisWeek = currentState.projectsCompletedThisWeek,
