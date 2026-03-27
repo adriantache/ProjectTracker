@@ -9,12 +9,16 @@ data class Task(
     val description: String = "",
     val isDone: Boolean = false,
     val timestamp: ZonedDateTime = ZonedDateTime.now(),
+    val completionTimestamp: Long? = null,
 ) {
     val isValid = title.isNotBlank()
 
     fun setTitle(title: String) = this.copy(title = title)
     fun setDescription(description: String) = this.copy(description = description)
-    fun setDone(isDone: Boolean) = this.copy(isDone = isDone)
+    fun setDone(isDone: Boolean) = this.copy(
+        isDone = isDone,
+        completionTimestamp = if (isDone) System.currentTimeMillis() else null
+    )
 
     fun toPair() = Pair(id, this)
 }

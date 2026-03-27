@@ -58,6 +58,10 @@ fun ProjectNavigation(
                         totalProjects = currentState.totalProjects,
                         pendingProjectsCount = currentState.pendingProjectsCount,
                         completedProjectsCount = currentState.completedProjectsCount,
+                        projectsCompletedThisWeek = currentState.projectsCompletedThisWeek,
+                        totalTasksCount = currentState.totalTasksCount,
+                        completedTasksCount = currentState.completedTasksCount,
+                        tasksCompletedThisWeek = currentState.tasksCompletedThisWeek,
                         recentProjects = currentState.recentProjects.map { it.toUi() },
                         categories = currentState.categories,
                         onProjectClick = currentState.onProjectSelected,
@@ -289,16 +293,20 @@ fun ProjectNavigation(
                     }
                 }
 
+                is ProjectState.CategoryView -> {
+                    LaunchedEffect(Unit) {
+                        navController.popBackStack(Screen.Categories.route, false)
+                    }
+                }
+
                 is ProjectState.ProjectsView -> {
                     LaunchedEffect(Unit) {
                         navController.popBackStack(Screen.Projects.route, false)
                     }
                 }
 
-                is ProjectState.CategoryView, is ProjectState.Init -> {
-                    LaunchedEffect(Unit) {
-                        navController.popBackStack(Screen.Categories.route, false)
-                    }
+                is ProjectState.Init -> LaunchedEffect(Unit) {
+                    navController.popBackStack(Screen.Dashboard.route, false)
                 }
             }
         }

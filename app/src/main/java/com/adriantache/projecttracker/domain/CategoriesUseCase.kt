@@ -112,10 +112,22 @@ class CategoriesUseCase @Inject constructor(
         val pendingProjects = projects.filter { !it.isCompleted }.sortedBy { it.name }
         val completedProjects = projects.filter { it.isCompleted }
 
+        val oneWeekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L
+        val projectsCompletedThisWeek = completedProjects.count { (it.completionTimestamp ?: 0L) > oneWeekAgo }
+
+        val allTasks = projects.flatMap { it.tasks.values }
+        val totalTasksCount = allTasks.size
+        val completedTasksCount = allTasks.count { it.isDone }
+        val tasksCompletedThisWeek = allTasks.count { it.isDone && (it.completionTimestamp ?: 0L) > oneWeekAgo }
+
         state.value = DashboardView(
             totalProjects = projects.size,
             pendingProjectsCount = pendingProjects.size,
             completedProjectsCount = completedProjects.size,
+            projectsCompletedThisWeek = projectsCompletedThisWeek,
+            totalTasksCount = totalTasksCount,
+            completedTasksCount = completedTasksCount,
+            tasksCompletedThisWeek = tasksCompletedThisWeek,
             recentProjects = pendingProjects.take(5),
             categories = categories,
             onProjectSelected = ::onProjectSelected,
@@ -225,8 +237,9 @@ class CategoriesUseCase @Inject constructor(
     private fun onMarkTaskAsDone(project: Project, id: String, done: Boolean) {
         scope.launch {
             val task = project.tasks[id] ?: return@launch
+            val updatedTask = task.setDone(done)
             val newProject = project.copy(
-                tasks = project.tasks + (id to task.copy(isDone = done)),
+                tasks = project.tasks + (id to updatedTask),
                 completionTimestamp = if (!done) null else project.completionTimestamp
             )
             repository.saveProject(newProject)

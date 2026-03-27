@@ -23,5 +23,6 @@ data class TaskEntity(
     val isDone: Boolean,
     val projectId: String,
     val timestamp: String, // ISO ZonedDateTime string
+    val completionTimestamp: Long? = null,
     val lastUpdated: Long = 0L, // For sync reconciliation
 )
