@@ -1,10 +1,8 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,9 +17,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -32,6 +32,7 @@ import com.adriantache.projecttracker.ui.model.CategoryUi
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +46,14 @@ fun CategoriesView(
     onDeleteCategory: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
+    val currentOnRefresh by rememberUpdatedState(onRefresh)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30000) // Refresh every 30 seconds
+            currentOnRefresh()
+        }
+    }
+
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<CategoryUi?>(null) }
@@ -77,56 +86,54 @@ fun CategoriesView(
             }
         }
     ) { paddingValues ->
-        Column(
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(200.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(bottom = 100.dp),
+                .padding(paddingValues),
+            contentPadding = PaddingValues(
+                start = 48.dp,
+                top = 24.dp,
+                end = 48.dp,
+                bottom = 88.dp // Avoid FAB but allow scrolling items left of it
+            ),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(200.dp),
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-            ) {
-                items(categories) { category ->
-                    ItemCard(
-                        id = category.id,
-                        title = category.name,
-                        description = category.description,
-                        footerText = category.numProjects.toString(),
-                        index = categories.indexOf(category),
-                        onClick = onCategoryClick,
-                        onDelete = onDeleteCategory,
-                        onEdit = { editingCategory = category },
-                    )
+            items(categories) { category ->
+                ItemCard(
+                    id = category.id,
+                    title = category.name,
+                    description = category.description,
+                    footerText = category.numProjects.toString(),
+                    index = categories.indexOf(category),
+                    onClick = onCategoryClick,
+                    onDelete = onDeleteCategory,
+                    onEdit = { editingCategory = category },
+                )
+            }
+        }
+
+        if (showAddDialog) {
+            AddProjectDialog(
+                categories = allCategories,
+                onDismiss = { showAddDialog = false },
+                onConfirm = { name, description, category ->
+                    onAddProject(name, description, category)
                 }
-            }
+            )
+        }
 
-            if (showAddDialog) {
-                AddProjectDialog(
-                    categories = allCategories,
-                    onDismiss = { showAddDialog = false },
-                    onConfirm = { name, description, category ->
-                        onAddProject(name, description, category)
-                    }
-                )
-            }
-
-            editingCategory?.let { category ->
-                AddCategoryDialog(
-                    initialName = category.name,
-                    initialDescription = category.description,
-                    isEdit = true,
-                    onDismiss = { editingCategory = null },
-                    onConfirm = { updatedCategory ->
-                        onEditCategory(category.id, updatedCategory.name, updatedCategory.description)
-                    }
-                )
-            }
+        editingCategory?.let { category ->
+            AddCategoryDialog(
+                initialName = category.name,
+                initialDescription = category.description,
+                isEdit = true,
+                onDismiss = { editingCategory = null },
+                onConfirm = { updatedCategory ->
+                    onEditCategory(category.id, updatedCategory.name, updatedCategory.description)
+                }
+            )
         }
     }
 }

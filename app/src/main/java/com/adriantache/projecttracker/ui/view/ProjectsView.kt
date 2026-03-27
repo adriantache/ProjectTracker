@@ -1,6 +1,5 @@
 package com.adriantache.projecttracker.ui.view
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,8 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -31,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,6 +74,16 @@ fun ProjectsView(
 
     var isCompletedExpanded by remember { mutableStateOf(false) }
 
+    val gridState = rememberLazyGridState()
+
+    LaunchedEffect(isCompletedExpanded) {
+        if (isCompletedExpanded) {
+            // Scroll to the "COMPLETED PROJECTS" header item, 
+            // which is at index projects.size
+            gridState.animateScrollToItem(projects.size)
+        }
+    }
+
     Scaffold(
         modifier = modifier
             .fillMaxSize()
@@ -101,20 +113,23 @@ fun ProjectsView(
             }
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(bottom = 100.dp),
+                .padding(paddingValues),
         ) {
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Adaptive(200.dp),
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
+                contentPadding = PaddingValues(
+                    start = 48.dp,
+                    top = 24.dp,
+                    end = 48.dp,
+                    bottom = 104.dp // Space for FAB
+                ),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
+                modifier = Modifier.fillMaxSize(),
             ) {
                 itemsIndexed(projects) { index, project ->
                     ItemCard(
@@ -128,69 +143,62 @@ fun ProjectsView(
                         onEdit = { editingProject = project }
                     )
                 }
-            }
 
-            if (completedProjects.isNotEmpty()) {
-                Spacer(modifier.height(16.dp))
+                if (completedProjects.isNotEmpty()) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Column {
+                            Spacer(Modifier.height(16.dp))
 
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 48.dp),
-                    color = TextMuted.copy(alpha = 0.2f)
-                )
+                            HorizontalDivider(
+                                color = TextMuted.copy(alpha = 0.2f)
+                            )
 
-                val rotation by animateFloatAsState(
-                    targetValue = if (isCompletedExpanded) 180f else 0f,
-                    label = "rotation"
-                )
+                            val rotation by animateFloatAsState(
+                                targetValue = if (isCompletedExpanded) 180f else 0f,
+                                label = "rotation"
+                            )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isCompletedExpanded = !isCompletedExpanded }
-                        .padding(horizontal = 48.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = "COMPLETED PROJECTS",
-                        fontFamily = InterFamily,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextMuted,
-                        letterSpacing = 2.sp,
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .background(TextMuted.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = completedProjects.size.toString(),
-                            fontFamily = InterFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextMuted
-                        )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isCompletedExpanded = !isCompletedExpanded }
+                                    .padding(vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "COMPLETED PROJECTS",
+                                    fontFamily = InterFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextMuted,
+                                    letterSpacing = 2.sp,
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(TextMuted.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = completedProjects.size.toString(),
+                                        fontFamily = InterFamily,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TextMuted
+                                    )
+                                }
+                                Spacer(modifier = Modifier.weight(1f))
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = TextMuted,
+                                    modifier = Modifier.rotate(rotation)
+                                )
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = TextMuted,
-                        modifier = Modifier.rotate(rotation)
-                    )
-                }
 
-                AnimatedVisibility(visible = isCompletedExpanded) {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(200.dp),
-                        contentPadding = PaddingValues(horizontal = 48.dp, vertical = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                    ) {
+                    if (isCompletedExpanded) {
                         itemsIndexed(completedProjects) { index, project ->
                             ItemCard(
                                 id = project.id,
