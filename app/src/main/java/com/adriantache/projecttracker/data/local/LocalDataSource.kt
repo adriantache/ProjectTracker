@@ -20,9 +20,6 @@ class LocalDataSource @Inject constructor(
             list.map { it.toProject() }
         }
 
-    suspend fun getProject(projectId: String): Project? =
-        projectDao.getProjectWithTasks(projectId)?.toProject()
-
     suspend fun saveProject(newProject: Project): Result<Unit> = saveProject(newProject, System.currentTimeMillis())
 
     suspend fun saveProject(newProject: Project, timestamp: Long): Result<Unit> = runCatching {
