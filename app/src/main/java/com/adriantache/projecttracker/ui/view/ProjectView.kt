@@ -1,12 +1,17 @@
 package com.adriantache.projecttracker.ui.view
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,16 +43,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,6 +60,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -686,7 +691,7 @@ fun AddTaskItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskItem(
     task: TaskUi,
@@ -694,113 +699,96 @@ fun TaskItem(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    val dismissState = rememberSwipeToDismissBoxState()
+    var showMenu by remember { mutableStateOf(false) }
 
-    LaunchedEffect(dismissState.currentValue) {
-        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
-            val value = dismissState.currentValue
-            // Immediately snap back to settled state to avoid item being stuck in dismissed position
-            // especially if the action doesn't remove it from the list immediately or shows a dialog.
-            dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+    val cardColor by animateColorAsState(
+        targetValue = if (task.isDone) SurfaceDark else CardDarkGrey,
+        animationSpec = tween(durationMillis = 300),
+        label = "CardColor"
+    )
 
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> onEdit()
-                SwipeToDismissBoxValue.EndToStart -> onDelete()
-                else -> {}
-            }
-        }
-    }
+    val iconScale by animateFloatAsState(
+        targetValue = if (task.isDone) 1.2f else 1f,
+        animationSpec = tween(durationMillis = 300),
+        label = "IconScale"
+    )
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            val direction = dismissState.dismissDirection
-            val color = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> AccentTeal.copy(alpha = 0.2f)
-                SwipeToDismissBoxValue.EndToStart -> Color.Red.copy(alpha = 0.2f)
-                else -> Color.Transparent
-            }
-            val alignment = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                else -> Alignment.Center
-            }
-            val icon = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
-                SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-                else -> null
-            }
-            val tint = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> AccentTeal
-                SwipeToDismissBoxValue.EndToStart -> Color.Red
-                else -> Color.Transparent
-            }
-
-            Box(
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = cardColor
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { showMenu = true },
+                    onLongClick = onToggle
+                )
+        ) {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(color, shape = RoundedCornerShape(16.dp))
-                    .padding(horizontal = 24.dp),
-                contentAlignment = alignment
+                    .padding(20.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (icon != null) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = tint,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        },
-        content = {
-            Card(
-                onClick = onToggle,
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (task.isDone) SurfaceDark else CardDarkGrey
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
+                Icon(
+                    imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (task.isDone) "Done" else "Not Done",
+                    tint = if (task.isDone) AccentTeal else TextMuted,
                     modifier = Modifier
-                        .padding(20.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                        contentDescription = if (task.isDone) "Done" else "Not Done",
-                        tint = if (task.isDone) AccentTeal else TextMuted,
-                        modifier = Modifier.size(28.dp)
+                        .size(28.dp)
+                        .scale(iconScale)
+                )
+
+                Spacer(modifier = Modifier.width(20.dp))
+
+                Column {
+                    Text(
+                        text = task.title,
+                        fontFamily = PlayfairFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (task.isDone) TextMuted else TextCream,
+                        textDecoration = if (task.isDone) TextDecoration.LineThrough else null
                     )
-
-                    Spacer(modifier = Modifier.width(20.dp))
-
-                    Column {
+                    if (task.description.isNotEmpty()) {
                         Text(
-                            text = task.title,
-                            fontFamily = PlayfairFamily,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (task.isDone) TextMuted else TextCream,
-                            textDecoration = if (task.isDone) TextDecoration.LineThrough else null
+                            text = task.description,
+                            fontFamily = InterFamily,
+                            fontSize = 14.sp,
+                            color = TextMuted,
+                            lineHeight = 20.sp,
+                            modifier = Modifier.padding(top = 4.dp)
                         )
-                        if (task.description.isNotEmpty()) {
-                            Text(
-                                text = task.description,
-                                fontFamily = InterFamily,
-                                fontSize = 14.sp,
-                                color = TextMuted,
-                                lineHeight = 20.sp,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
                     }
                 }
             }
         }
-    )
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            modifier = Modifier.background(CardDarkGrey)
+        ) {
+            DropdownMenuItem(
+                text = { Text("Edit Task", color = TextCream, fontFamily = InterFamily) },
+                onClick = {
+                    showMenu = false
+                    onEdit()
+                },
+                leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = AccentTeal) }
+            )
+            DropdownMenuItem(
+                text = { Text("Delete Task", color = Color.Red, fontFamily = InterFamily) },
+                onClick = {
+                    showMenu = false
+                    onDelete()
+                },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red) }
+            )
+        }
+    }
 }
 
 @Preview(widthDp = 1280, heightDp = 800)
