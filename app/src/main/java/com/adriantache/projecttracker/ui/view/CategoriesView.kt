@@ -17,11 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -32,7 +30,6 @@ import com.adriantache.projecttracker.ui.model.CategoryUi
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,14 +44,6 @@ fun CategoriesView(
     onBackClick: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    val currentOnRefresh by rememberUpdatedState(onRefresh)
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(30000) // Refresh every 30 seconds
-            currentOnRefresh()
-        }
-    }
-
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<CategoryUi?>(null) }

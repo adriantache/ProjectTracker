@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +39,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +49,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,7 @@ import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
 import com.adriantache.projecttracker.ui.theme.SecondaryGray
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -75,6 +79,14 @@ fun DashboardView(
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    val currentOnRefresh by rememberUpdatedState(onRefresh)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30000) // Refresh every 30 seconds
+            currentOnRefresh()
+        }
+    }
 
     Scaffold(
         modifier = Modifier
@@ -203,17 +215,27 @@ fun DashboardView(
                     actionText = "View All",
                     onActionClick = onViewAllCategories
                 )
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            items(categories.chunked(4)) { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(categories) { category ->
-                        CategoryChip(
+                    rowItems.forEach { category ->
+                        CategoryCard(
+                            modifier = Modifier.weight(1f),
                             category = category,
                             onClick = { onCategoryClick(category.id) }
                         )
                     }
+                    repeat(4 - rowItems.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -366,23 +388,35 @@ fun RecentProjectItem(
 }
 
 @Composable
-fun CategoryChip(
+fun CategoryCard(
+    modifier: Modifier = Modifier,
     category: Category,
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = modifier
+            .height(48.dp)
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = SecondaryGray.copy(alpha = 0.2f)
+            containerColor = SecondaryGray.copy(alpha = 0.1f)
         ),
-        shape = RoundedCornerShape(24.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Text(
-            text = category.name,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            color = Color.White,
-            fontSize = 14.sp
-        )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = category.name,
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -407,25 +441,16 @@ fun DashboardPreview() {
                     tasks = emptyList(),
                     progress = 0.6f,
                     isCompleted = false,
-                    canBeCompleted = false
-                ),
-                ProjectUi(
-                    id = "2",
-                    name = "Personal Website",
-                    description = "Portfolio site",
-                    category = Category(name = "Web", description = ""),
-                    tasksText = "8/10 tasks",
-                    tasks = emptyList(),
-                    progress = 0.8f,
-                    isCompleted = false,
-                    canBeCompleted = false
+                    canBeCompleted = false,
                 )
             ),
             categories = listOf(
-                Category(name = "All", description = ""),
-                Category(name = "Mobile", description = ""),
-                Category(name = "Web", description = ""),
-                Category(name = "Design", description = "")
+                Category(id = "1", name = "Mobile", description = ""),
+                Category(id = "2", name = "Web", description = ""),
+                Category(id = "3", name = "Desktop", description = ""),
+                Category(id = "4", name = "Design", description = ""),
+                Category(id = "5", name = "Marketing", description = ""),
+                Category(id = "6", name = "Other", description = ""),
             ),
             onProjectClick = {},
             onCategoryClick = {},
