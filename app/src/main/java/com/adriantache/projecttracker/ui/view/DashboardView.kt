@@ -412,7 +412,7 @@ fun CategoryCard(
 ) {
     Card(
         modifier = modifier
-            .height(48.dp)
+            .height(56.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = SecondaryGray.copy(alpha = 0.1f)
@@ -426,7 +426,7 @@ fun CategoryCard(
             Text(
                 text = category.name,
                 color = Color.White,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 4.dp),

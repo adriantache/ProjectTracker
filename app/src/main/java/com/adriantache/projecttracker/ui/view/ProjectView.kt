@@ -163,6 +163,31 @@ fun ProjectView(
                     )
                 }
 
+                if (project.canBeCompleted) {
+                    item {
+                        Button(
+                            onClick = { showCompleteConfirmation = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AccentTeal,
+                                contentColor = BackgroundDark
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            contentPadding = PaddingValues(16.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "MARK PROJECT AS COMPLETED",
+                                fontFamily = InterFamily,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
                 item {
                     Text(
                         text = "TASKS",
@@ -232,31 +257,6 @@ fun ProjectView(
                             onEdit = { editingTask = task },
                             onDelete = { onDeleteTask(task.id) }
                         )
-                    }
-                }
-
-                if (project.canBeCompleted) {
-                    item {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        Button(
-                            onClick = { showCompleteConfirmation = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentTeal,
-                                contentColor = BackgroundDark
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(16.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "MARK PROJECT AS COMPLETED",
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                        }
                     }
                 }
 
@@ -815,8 +815,8 @@ fun ProjectViewPreview() {
         ),
         progress = 0.375f,
         isCompleted = false,
-        canBeCompleted = false,
-        isFavorite = false
+        canBeCompleted = true,
+        isFavorite = true
     )
 
     ProjectTrackerTheme {
