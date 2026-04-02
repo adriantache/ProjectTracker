@@ -66,7 +66,8 @@ class RemoteDataSource @Inject constructor(
                     title = task.title,
                     description = task.description,
                     isDone = task.isDone,
-                    timestamp = task.timestamp.format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
+                    timestamp = task.timestamp.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+                    completionTimestamp = task.completionTimestamp
                 )
             },
             timestamp = isoTimestamp,
@@ -96,7 +97,8 @@ class RemoteDataSource @Inject constructor(
                         ZonedDateTime.parse(task.timestamp)
                     } catch (_: Exception) {
                         ZonedDateTime.now()
-                    }
+                    },
+                    completionTimestamp = task.completionTimestamp
                 )
             },
             isFavorite = isFavorite,

@@ -15,4 +15,6 @@ data class RemoteTask(
     val isDone: Boolean = false,
     @get:PropertyName("timestamp")
     val timestamp: String = "",
+    @get:PropertyName("completionTimestamp")
+    val completionTimestamp: Long? = null,
 )

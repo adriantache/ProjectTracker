@@ -50,6 +50,7 @@ fun Task.toEntity(projectId: String, lastUpdated: Long = System.currentTimeMilli
     description = description,
     isDone = isDone,
     timestamp = timestamp.format(DateTimeFormatter.ISO_ZONED_DATE_TIME),
+    completionTimestamp = completionTimestamp,
     lastUpdated = lastUpdated,
 )
 
@@ -59,4 +60,5 @@ fun TaskEntity.toTask() = Task(
     description = description,
     isDone = isDone,
     timestamp = ZonedDateTime.parse(timestamp),
+    completionTimestamp = completionTimestamp,
 )
