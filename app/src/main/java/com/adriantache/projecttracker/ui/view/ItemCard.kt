@@ -1,10 +1,13 @@
 package com.adriantache.projecttracker.ui.view
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,8 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -69,101 +70,111 @@ fun ItemCard(
             .defaultMinSize(200.dp)
             .height(240.dp)
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp)
-                .padding(start = 24.dp)
-                .padding(end = 16.dp)
-        ) {
-            val endPadding = 8.dp
-
-            Row(Modifier.fillMaxWidth()) {
-                Text(
-                    text = title,
-                    fontFamily = PlayfairFamily,
-                    fontSize = 28.sp,
-                    lineHeight = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextCream,
-                    modifier = Modifier.weight(1f)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Favorite indicator strip along the left side
+            if (isFavorite) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(6.dp)
+                        .background(Color(0xFFFFD700)) // Gold/Yellow strip
                 )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = { onToggleFavorite(id) },
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
-                        contentDescription = "Favorite",
-                        tint = if (isFavorite) Color.Yellow else TextCream
-                    )
-                }
-
-                Box {
-                    IconButton(
-                        onClick = { showMenu = true },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Menu",
-                            tint = TextCream
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        containerColor = SurfaceDark
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit", color = TextCream) },
-                            onClick = {
-                                onEdit(id)
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Delete", color = TextCream) },
-                            onClick = {
-                                onDelete(id)
-                                showMenu = false
-                            }
-                        )
-                    }
-                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = description,
-                fontFamily = InterFamily,
-                fontSize = 14.sp,
-                color = TextMuted,
-                lineHeight = 20.sp,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .padding(end = endPadding + 32.dp)
-                    .weight(1f),
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                modifier = Modifier
+            Column(
+                Modifier
                     .fillMaxWidth()
-                    .padding(end = endPadding),
-                text = footerText,
-                fontFamily = InterFamily,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                color = AccentTeal,
-                textAlign = TextAlign.End,
-            )
+                    .padding(vertical = 24.dp)
+                    .padding(start = 24.dp)
+                    .padding(end = 16.dp)
+            ) {
+                val endPadding = 8.dp
+
+                Row(Modifier.fillMaxWidth()) {
+                    Text(
+                        text = title,
+                        fontFamily = PlayfairFamily,
+                        fontSize = 28.sp,
+                        lineHeight = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextCream,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Menu",
+                                tint = TextCream
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            containerColor = SurfaceDark
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit", color = TextCream) },
+                                onClick = {
+                                    onEdit(id)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(if (isFavorite) "Unfavorite" else "Favorite", color = TextCream) },
+                                onClick = {
+                                    onToggleFavorite(id)
+                                    showMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = TextCream) },
+                                onClick = {
+                                    onDelete(id)
+                                    showMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = description,
+                    fontFamily = InterFamily,
+                    fontSize = 14.sp,
+                    color = TextMuted,
+                    lineHeight = 20.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .padding(end = 32.dp)
+                        .weight(1f),
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = endPadding),
+                    text = footerText,
+                    fontFamily = InterFamily,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    color = AccentTeal,
+                    textAlign = TextAlign.End,
+                )
+            }
         }
     }
 }
@@ -176,10 +187,7 @@ fun ItemCardPreview() {
             ItemCard(
                 id = "1",
                 title = "Sample Project",
-                description = "This is a sample project description to test the ItemCard layout and see how it looks." +
-                        "This is a sample project description to test the ItemCard layout and see how it looks." +
-                        "This is a sample project description to test the ItemCard layout and see how it looks." +
-                        "This is a sample project description to test the ItemCard layout and see how it looks.",
+                description = "This is a sample project description to test the ItemCard layout and see how it looks. It should wrap nicely and show the new favorite indicator.",
                 footerText = "5",
                 index = 0,
                 onClick = {},
