@@ -29,10 +29,13 @@ import androidx.compose.material.icons.filled.AssignmentTurnedIn
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -77,6 +80,7 @@ fun DashboardView(
     onCategoryClick: (String) -> Unit,
     onViewAllCategories: () -> Unit,
     onRefresh: () -> Unit,
+    onToggleFavorite: (String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -201,7 +205,8 @@ fun DashboardView(
             items(recentProjects) { project ->
                 RecentProjectItem(
                     project = project,
-                    onClick = { onProjectClick(project.id) }
+                    onClick = { onProjectClick(project.id) },
+                    onToggleFavorite = { onToggleFavorite(project.id) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -349,6 +354,7 @@ fun SectionHeader(
 fun RecentProjectItem(
     project: ProjectUi,
     onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -378,6 +384,17 @@ fun RecentProjectItem(
                     fontSize = 12.sp
                 )
             }
+
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (project.isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
+                    contentDescription = "Toggle Favorite",
+                    tint = if (project.isFavorite) Color.Yellow else SecondaryGray
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
             Text(
                 text = "${(project.progress * 100).toInt()}%",
                 color = Color.White,
@@ -442,6 +459,7 @@ fun DashboardPreview() {
                     progress = 0.6f,
                     isCompleted = false,
                     canBeCompleted = false,
+                    isFavorite = true,
                 )
             ),
             categories = listOf(

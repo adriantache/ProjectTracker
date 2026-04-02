@@ -109,7 +109,8 @@ class CategoriesUseCase @Inject constructor(
     }
 
     private fun showDashboard() {
-        val pendingProjects = projects.filter { !it.isCompleted }.sortedBy { it.name }
+        val pendingProjects = projects.filter { !it.isCompleted }
+            .sortedWith(compareByDescending<Project> { it.isFavorite }.thenBy { it.name })
         val completedProjects = projects.filter { it.isCompleted }
 
         val oneWeekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L
@@ -134,6 +135,7 @@ class CategoriesUseCase @Inject constructor(
             onCategorySelected = ::onCategorySelected,
             onViewAllCategories = ::showCategories,
             onRefresh = ::onRefreshDashboard,
+            onToggleFavorite = ::onToggleFavorite,
         )
     }
 
@@ -178,7 +180,8 @@ class CategoriesUseCase @Inject constructor(
         } else {
             emptyList()
         }
-        val pendingProjects = filteredProjects.filter { !it.isCompleted }.sortedBy { it.name }
+        val pendingProjects = filteredProjects.filter { !it.isCompleted }
+            .sortedWith(compareByDescending<Project> { it.isFavorite }.thenBy { it.name })
         val completedProjects = filteredProjects.filter { it.isCompleted }.sortedByDescending { it.completionTimestamp }
 
         state.value = ProjectsView(
@@ -197,7 +200,8 @@ class CategoriesUseCase @Inject constructor(
                     repository.fetchProjects()
                     if (state.value is Loading) onCategorySelected(categoryId)
                 }
-            }
+            },
+            onToggleFavorite = ::onToggleFavorite,
         )
     }
 
@@ -225,7 +229,14 @@ class CategoriesUseCase @Inject constructor(
                 }
             },
             onRefresh = { onRefreshProject(projectId) },
+            onToggleFavorite = ::onToggleFavorite,
         )
+    }
+
+    private fun onToggleFavorite(projectId: String) {
+        scope.launch {
+            repository.toggleFavorite(projectId)
+        }
     }
 
     private fun onCompleteProject(projectId: String) {

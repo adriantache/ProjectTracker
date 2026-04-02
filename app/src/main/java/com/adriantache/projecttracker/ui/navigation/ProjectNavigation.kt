@@ -66,7 +66,8 @@ fun ProjectNavigation(
                         onProjectClick = currentState.onProjectSelected,
                         onCategoryClick = currentState.onCategorySelected,
                         onViewAllCategories = currentState.onViewAllCategories,
-                        onRefresh = currentState.onRefresh
+                        onRefresh = currentState.onRefresh,
+                        onToggleFavorite = currentState.onToggleFavorite
                     )
                 }
 
@@ -203,6 +204,9 @@ fun ProjectNavigation(
                         onDeleteProject = { projectId ->
                             currentState.onDeleteProject(projectId)
                         },
+                        onToggleFavorite = { projectId: String ->
+                            currentState.onToggleFavorite(projectId)
+                        },
                         onRefresh = currentState.onRefresh
                     )
                 }
@@ -274,6 +278,9 @@ fun ProjectNavigation(
                         },
                         onDeleteTask = { taskId ->
                             currentState.onDeleteTask(taskId)
+                        },
+                        onToggleFavorite = {
+                            currentState.onToggleFavorite(currentState.project.id)
                         },
                         onCompleteProject = {
                             currentState.onCompleteProject()

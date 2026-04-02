@@ -9,4 +9,5 @@ interface ProjectsRepositoryInterface {
     suspend fun saveProject(newProject: Project): Result<Unit>
     suspend fun deleteProject(projectId: String): Result<Unit>
     suspend fun completeProject(projectId: String): Result<Unit>
+    suspend fun toggleFavorite(projectId: String): Result<Unit>
 }

@@ -25,6 +25,7 @@ data class ProjectEntity(
     val description: String,
     val categoryId: String,
     val lastUpdated: Long = 0L,
+    val isFavorite: Boolean = false,
     val completionTimestamp: Long? = null,
 )
 

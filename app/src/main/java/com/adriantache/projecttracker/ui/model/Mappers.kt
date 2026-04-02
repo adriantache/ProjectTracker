@@ -25,7 +25,8 @@ fun Project.toUi(): ProjectUi {
         tasks = tasks.values.sortedByDescending { it.timestamp }.map { it.toUi() },
         progress = progress,
         isCompleted = isCompleted,
-        canBeCompleted = !isCompleted && isDone && tasks.isNotEmpty()
+        canBeCompleted = !isCompleted && isDone && tasks.isNotEmpty(),
+        isFavorite = isFavorite,
     )
 }
 

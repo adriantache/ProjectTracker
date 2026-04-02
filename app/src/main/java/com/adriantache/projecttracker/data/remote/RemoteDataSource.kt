@@ -70,6 +70,7 @@ class RemoteDataSource @Inject constructor(
                 )
             },
             timestamp = isoTimestamp,
+            isFavorite = newProject.isFavorite,
             completionTimestamp = newProject.completionTimestamp
         )
         userProjectsRef.child(newProject.id).setValue(remoteProject).await()
@@ -98,6 +99,7 @@ class RemoteDataSource @Inject constructor(
                     }
                 )
             },
+            isFavorite = isFavorite,
             completionTimestamp = completionTimestamp
         )
     }

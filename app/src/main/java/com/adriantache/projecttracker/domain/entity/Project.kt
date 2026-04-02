@@ -8,6 +8,7 @@ data class Project(
     val description: String = "",
     val category: Category = Category.All,
     val tasks: Map<String, Task> = emptyMap(),
+    val isFavorite: Boolean = false,
     val completionTimestamp: Long? = null,
 ) {
     val isValid = name.isNotBlank()

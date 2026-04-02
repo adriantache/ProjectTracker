@@ -110,6 +110,7 @@ fun ProjectView(
     onDeleteTask: (String) -> Unit,
     onTaskToggle: (String) -> Unit,
     onCompleteProject: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -132,7 +133,9 @@ fun ProjectView(
                 scrollBehavior = scrollBehavior,
                 onBackClick = onBackClick,
                 onRefresh = onRefresh,
-                onEdit = { showEditProjectDialog = true }
+                onEdit = { showEditProjectDialog = true },
+                isFavorite = project.isFavorite,
+                onToggleFavorite = onToggleFavorite
             )
         }
     ) { paddingValues ->
@@ -812,7 +815,8 @@ fun ProjectViewPreview() {
         ),
         progress = 0.375f,
         isCompleted = false,
-        canBeCompleted = false
+        canBeCompleted = false,
+        isFavorite = false
     )
 
     ProjectTrackerTheme {
@@ -825,6 +829,7 @@ fun ProjectViewPreview() {
             onDeleteTask = {},
             onTaskToggle = {},
             onCompleteProject = {},
+            onToggleFavorite = {},
             onRefresh = {},
         )
     }

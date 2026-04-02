@@ -17,6 +17,8 @@ data class RemoteProject(
     val tasks: Map<String, RemoteTask> = emptyMap(),
     @get:PropertyName("timestamp")
     val timestamp: String = "",
+    @get:PropertyName("isFavorite")
+    val isFavorite: Boolean = false,
     @get:PropertyName("completionTimestamp")
     val completionTimestamp: Long? = null,
 )

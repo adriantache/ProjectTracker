@@ -54,4 +54,13 @@ class ProjectsRepository @Inject constructor(
                         Log.e("ProjectsRepository", "Error deleting project from remote", it)
                     }
             }
+
+    override suspend fun toggleFavorite(projectId: String): Result<Unit> =
+        localDataSource.toggleFavorite(projectId)
+            .onSuccess { updatedProject ->
+                remoteDataSource.saveProject(updatedProject, System.currentTimeMillis())
+                    .onFailure {
+                        Log.e("ProjectsRepository", "Error saving favorited project to remote", it)
+                    }
+            }.map { }
 }

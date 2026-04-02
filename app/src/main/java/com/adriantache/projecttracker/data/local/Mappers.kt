@@ -16,6 +16,7 @@ fun Project.toEntity(lastUpdated: Long = System.currentTimeMillis()) = ProjectEn
     description = description,
     categoryId = category.id,
     lastUpdated = lastUpdated,
+    isFavorite = isFavorite,
     completionTimestamp = completionTimestamp,
 )
 
@@ -38,6 +39,7 @@ fun ProjectWithTasks.toProject() = Project(
     description = project.description,
     category = category.toCategory(),
     tasks = tasks.map { it.toTask() }.associateBy { it.id },
+    isFavorite = project.isFavorite,
     completionTimestamp = project.completionTimestamp,
 )
 

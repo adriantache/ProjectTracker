@@ -12,4 +12,5 @@ data class ProjectUi(
     val progress: Float,
     val isCompleted: Boolean,
     val canBeCompleted: Boolean,
+    val isFavorite: Boolean,
 )

@@ -51,6 +51,18 @@ class LocalDataSource @Inject constructor(
         }
     }
 
+    suspend fun toggleFavorite(projectId: String): Result<Project> = runCatching {
+        database.withTransaction {
+            val projectWithTasks = projectDao.getProjectWithTasks(projectId) ?: throw Exception("Project not found")
+            val updatedProjectEntity = projectWithTasks.project.copy(
+                isFavorite = !projectWithTasks.project.isFavorite,
+                lastUpdated = System.currentTimeMillis()
+            )
+            projectDao.upsertProject(updatedProjectEntity)
+            projectWithTasks.copy(project = updatedProjectEntity).toProject()
+        }
+    }
+
     suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
         database.withTransaction {
             taskDao.deleteTasksForProject(projectId)

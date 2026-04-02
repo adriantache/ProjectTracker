@@ -22,6 +22,7 @@ sealed interface ProjectState {
         val onCategorySelected: (String) -> Unit,
         val onViewAllCategories: () -> Unit,
         val onRefresh: () -> Unit,
+        val onToggleFavorite: (String) -> Unit,
     ) : ProjectState
 
     data class CategoryView(
@@ -47,6 +48,7 @@ sealed interface ProjectState {
         val onDeleteProject: (String) -> Unit,
         val onBack: () -> Unit,
         val onRefresh: () -> Unit,
+        val onToggleFavorite: (String) -> Unit,
     ) : ProjectState
 
     data class TasksView(
@@ -60,6 +62,7 @@ sealed interface ProjectState {
         val onRefresh: () -> Unit,
         val onMarkTaskAsDone: (taskId: String, isDone: Boolean) -> Unit,
         val onCompleteProject: () -> Unit,
+        val onToggleFavorite: (String) -> Unit,
     ) : ProjectState
 
     data class Error(val message: String) : ProjectState

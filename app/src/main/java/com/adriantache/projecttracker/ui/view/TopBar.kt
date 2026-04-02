@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +49,8 @@ fun MainTopBar(
     onBackClick: (() -> Unit)? = null,
     onRefresh: (() -> Unit)? = null,
     onEdit: (() -> Unit)? = null,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (() -> Unit)? = null,
 ) {
     val topBarInsets = WindowInsets(top = 32.dp)
     var showMenu by remember { mutableStateOf(false) }
@@ -64,6 +68,15 @@ fun MainTopBar(
     }
 
     val actions: @Composable RowScope.() -> Unit = {
+        if (onToggleFavorite != null) {
+            IconButton(onClick = onToggleFavorite) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
+                    contentDescription = "Toggle Favorite",
+                    tint = if (isFavorite) Color.Yellow else TextCream
+                )
+            }
+        }
         if (onRefresh != null) {
             IconButton(onClick = onRefresh) {
                 Icon(

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -26,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +55,8 @@ fun ItemCard(
     onDelete: (String) -> Unit,
     onEdit: (String) -> Unit,
     modifier: Modifier = Modifier,
+    isFavorite: Boolean = false,
+    onToggleFavorite: (String) -> Unit = {},
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -85,6 +90,17 @@ fun ItemCard(
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
+
+                IconButton(
+                    onClick = { onToggleFavorite(id) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
+                        contentDescription = "Favorite",
+                        tint = if (isFavorite) Color.Yellow else TextCream
+                    )
+                }
 
                 Box {
                     IconButton(
@@ -168,7 +184,8 @@ fun ItemCardPreview() {
                 index = 0,
                 onClick = {},
                 onDelete = {},
-                onEdit = {}
+                onEdit = {},
+                isFavorite = true
             )
         }
     }

@@ -66,6 +66,7 @@ fun ProjectsView(
     onProjectClick: (String) -> Unit,
     onEditProject: (String, String, String, Category) -> Unit,
     onDeleteProject: (String) -> Unit,
+    onToggleFavorite: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -140,7 +141,9 @@ fun ProjectsView(
                         index = index,
                         onClick = onProjectClick,
                         onDelete = onDeleteProject,
-                        onEdit = { editingProject = project }
+                        onEdit = { editingProject = project },
+                        isFavorite = project.isFavorite,
+                        onToggleFavorite = onToggleFavorite
                     )
                 }
 
@@ -208,7 +211,9 @@ fun ProjectsView(
                                 index = index,
                                 onClick = onProjectClick,
                                 onDelete = onDeleteProject,
-                                onEdit = { editingProject = project }
+                                onEdit = { editingProject = project },
+                                isFavorite = project.isFavorite,
+                                onToggleFavorite = onToggleFavorite
                             )
                         }
                     }
@@ -259,7 +264,8 @@ fun ProjectsViewPreview() {
             category = Category(id = "Test", name = "Test", description = ""),
             progress = 0f,
             isCompleted = isCompleted,
-            canBeCompleted = true
+            canBeCompleted = true,
+            isFavorite = i % 3 == 0
         )
     }
 
@@ -272,6 +278,7 @@ fun ProjectsViewPreview() {
             onProjectClick = {},
             onEditProject = { _, _, _, _ -> },
             onDeleteProject = {},
+            onToggleFavorite = {},
             onRefresh = {},
             completedProjects = sampleProjects.filter { it.isCompleted },
         )
