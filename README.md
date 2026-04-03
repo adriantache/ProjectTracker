@@ -55,9 +55,8 @@ app/src/main/java/com/adriantache/projecttracker/
 ## ⚙️ Setup
 
 1. Clone the repository.
-2. Add your `google-services.json` to the `app/` directory.
-3. (Optional) Configure signing properties in `local.properties` for release builds.
-4. Build and run!
+2. (Optional) Configure signing properties in `local.properties` for release builds.
+3. Build and run!
 
 ---
 Developed by [Adrian Tache](https://github.com/adriantache)
