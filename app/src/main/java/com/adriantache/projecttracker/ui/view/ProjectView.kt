@@ -57,9 +57,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -95,9 +97,11 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.animateLottieCompositionAsState
 import com.airbnb.lottie.compose.rememberLottieComposition
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ProjectView(
     modifier: Modifier = Modifier,
@@ -230,6 +234,7 @@ fun ProjectView(
 
                 items(notDoneTasks, key = { it.id }) { task ->
                     TaskItem(
+                        modifier = Modifier.animateItem(),
                         task = task,
                         onToggle = { onTaskToggle(task.id) },
                         onEdit = { editingTask = task },
@@ -252,6 +257,7 @@ fun ProjectView(
 
                     items(doneTasks, key = { it.id }) { task ->
                         TaskItem(
+                            modifier = Modifier.animateItem(),
                             task = task,
                             onToggle = { onTaskToggle(task.id) },
                             onEdit = { editingTask = task },
@@ -697,26 +703,43 @@ fun AddTaskItem(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskItem(
+    modifier: Modifier = Modifier,
     task: TaskUi,
     onToggle: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var isMarkingDone by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    val isVisualDone = task.isDone || isMarkingDone
 
     val cardColor by animateColorAsState(
-        targetValue = if (task.isDone) SurfaceDark else CardDarkGrey,
-        animationSpec = tween(durationMillis = 300),
+        targetValue = if (isVisualDone) SurfaceDark else CardDarkGrey,
+        animationSpec = tween(durationMillis = 400),
         label = "CardColor"
     )
 
     val iconScale by animateFloatAsState(
-        targetValue = if (task.isDone) 1.2f else 1f,
-        animationSpec = tween(durationMillis = 300),
+        targetValue = if (isVisualDone) 1.3f else 1f,
+        animationSpec = tween(durationMillis = 400),
         label = "IconScale"
     )
 
-    Box(modifier = Modifier.fillMaxWidth()) {
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isVisualDone) 0.5f else 1f,
+        animationSpec = tween(durationMillis = 400),
+        label = "ContentAlpha"
+    )
+
+    val cardScale by animateFloatAsState(
+        targetValue = if (isMarkingDone) 0.96f else 1f,
+        animationSpec = tween(durationMillis = 400),
+        label = "CardScale"
+    )
+
+    Box(modifier = modifier.fillMaxWidth()) {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
@@ -724,21 +747,34 @@ fun TaskItem(
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .scale(cardScale)
                 .combinedClickable(
                     onClick = { showMenu = true },
-                    onLongClick = onToggle
+                    onLongClick = {
+                        if (!task.isDone) {
+                            scope.launch {
+                                isMarkingDone = true
+                                delay(400)
+                                onToggle()
+                                isMarkingDone = false
+                            }
+                        } else {
+                            onToggle()
+                        }
+                    }
                 )
         ) {
             Row(
                 modifier = Modifier
                     .padding(20.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .alpha(contentAlpha),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (task.isDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-                    contentDescription = if (task.isDone) "Done" else "Not Done",
-                    tint = if (task.isDone) AccentTeal else TextMuted,
+                    imageVector = if (isVisualDone) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+                    contentDescription = if (isVisualDone) "Done" else "Not Done",
+                    tint = if (isVisualDone) AccentTeal else TextMuted,
                     modifier = Modifier
                         .size(28.dp)
                         .scale(iconScale)
@@ -752,8 +788,8 @@ fun TaskItem(
                         fontFamily = PlayfairFamily,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (task.isDone) TextMuted else TextCream,
-                        textDecoration = if (task.isDone) TextDecoration.LineThrough else null
+                        color = if (isVisualDone) TextMuted else TextCream,
+                        textDecoration = if (isVisualDone) TextDecoration.LineThrough else null
                     )
                     if (task.description.isNotEmpty()) {
                         Text(
