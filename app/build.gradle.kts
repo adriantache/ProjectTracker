@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kover)
 }
 
 val localProperties = Properties()
@@ -111,4 +112,27 @@ dependencies {
 
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+kover {
+    reports {
+        variant("debug") {
+            log {
+                onCheck = true
+            }
+            xml {
+                onCheck = true
+            }
+        }
+    }
+}
+
+tasks.register("copyReport") {
+    dependsOn("koverXmlReportDebug")
+    doLast {
+        val reportFile = file("build/reports/kover/reportDebug.xml")
+        if (reportFile.exists()) {
+            reportFile.copyTo(file("../coverage_report.xml"), overwrite = true)
+        }
+    }
 }

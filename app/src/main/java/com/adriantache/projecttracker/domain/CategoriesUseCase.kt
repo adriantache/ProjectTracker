@@ -13,7 +13,6 @@ import com.adriantache.projecttracker.domain.state.ProjectState.Loading
 import com.adriantache.projecttracker.domain.state.ProjectState.ProjectsView
 import com.adriantache.projecttracker.domain.state.ProjectState.TasksView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,11 +22,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class CategoriesUseCase @Inject constructor(
     private val repository: ProjectsRepositoryInterface,
+    private val scope: CoroutineScope, // Injected for testability
 ) {
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
     private var projectsJob: Job? = null
 
     val state: StateFlow<ProjectState>

@@ -6,18 +6,17 @@ import com.google.firebase.auth.FirebaseUser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     val auth: FirebaseAuth,
 ) : ViewModel() {
-    private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
-    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
+    val currentUser: StateFlow<FirebaseUser?>
+        field = MutableStateFlow(auth.currentUser)
 
     private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-        _currentUser.value = firebaseAuth.currentUser
+        currentUser.value = firebaseAuth.currentUser
     }
 
     init {

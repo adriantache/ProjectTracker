@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -74,20 +75,21 @@ class LocalDataSourceTest {
             tasks = mapOf("t1" to Task(id = "t1", title = "Task 1"))
         )
 
-        // Mock database.withTransaction to just execute the block
         coEvery { database.withTransaction<Unit>(any()) } coAnswers {
             val block = secondArg<suspend () -> Unit>()
             block()
         }
         coEvery { categoryDao.upsertCategory(any()) } returns Unit
         coEvery { projectDao.upsertProject(any()) } returns Unit
+        coEvery { taskDao.deleteTasksForProjectExcept(any(), any()) } returns Unit
         coEvery { taskDao.upsertTask(any()) } returns Unit
 
         val result = localDataSource.saveProject(project)
 
-        assert(result.isSuccess)
+        assertTrue(result.isSuccess)
         coVerify(exactly = 1) { categoryDao.upsertCategory(any()) }
         coVerify(exactly = 1) { projectDao.upsertProject(any()) }
+        coVerify(exactly = 1) { taskDao.deleteTasksForProjectExcept("p1", listOf("t1")) }
         coVerify(exactly = 1) { taskDao.upsertTask(any()) }
     }
 
@@ -103,8 +105,92 @@ class LocalDataSourceTest {
 
         val result = localDataSource.deleteProject(projectId)
 
-        assert(result.isSuccess)
+        assertTrue(result.isSuccess)
         coVerify(exactly = 1) { taskDao.deleteTasksForProject(projectId) }
         coVerify(exactly = 1) { projectDao.deleteProject(projectId) }
+    }
+
+    @Test
+    fun `completeProject updates project with completion timestamp`() = runTest {
+        val projectId = "p1"
+        val timestamp = 123456789L
+        val categoryEntity = CategoryEntity("cat1", "Category 1", "Desc")
+        val projectEntity = ProjectEntity("p1", "Project 1", "Desc", "cat1")
+        val projectWithTasks = ProjectWithTasks(
+            project = projectEntity,
+            category = categoryEntity,
+            tasks = emptyList()
+        )
+
+        coEvery { database.withTransaction<Project>(any()) } coAnswers {
+            val block = secondArg<suspend () -> Project>()
+            block()
+        }
+        coEvery { projectDao.getProjectWithTasks(projectId) } returns projectWithTasks
+        coEvery { projectDao.upsertProject(any()) } returns Unit
+
+        val result = localDataSource.completeProject(projectId, timestamp)
+
+        assertTrue(result.isSuccess)
+        val updatedProject = result.getOrNull()
+        assertEquals(timestamp, updatedProject?.completionTimestamp)
+        coVerify { projectDao.upsertProject(match { it.completionTimestamp == timestamp }) }
+    }
+
+    @Test
+    fun `toggleFavorite toggles isFavorite flag`() = runTest {
+        val projectId = "p1"
+        val categoryEntity = CategoryEntity("cat1", "Category 1", "Desc")
+        val projectEntity = ProjectEntity("p1", "Project 1", "Desc", "cat1", isFavorite = false)
+        val projectWithTasks = ProjectWithTasks(
+            project = projectEntity,
+            category = categoryEntity,
+            tasks = emptyList()
+        )
+
+        coEvery { database.withTransaction<Project>(any()) } coAnswers {
+            val block = secondArg<suspend () -> Project>()
+            block()
+        }
+        coEvery { projectDao.getProjectWithTasks(projectId) } returns projectWithTasks
+        coEvery { projectDao.upsertProject(any()) } returns Unit
+
+        val result = localDataSource.toggleFavorite(projectId)
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrThrow().isFavorite)
+        coVerify { projectDao.upsertProject(match { it.isFavorite }) }
+    }
+
+    @Test
+    fun `syncProjects reconciles local data with remote`() = runTest {
+        val project = Project(
+            id = "p1",
+            name = "Project 1",
+            category = Category(id = "cat1", name = "Cat", description = "Desc"),
+            tasks = mapOf("t1" to Task(id = "t1", title = "Task 1"))
+        )
+        val remoteProjects = listOf(project to 200L)
+
+        coEvery { database.withTransaction<Unit>(any()) } coAnswers {
+            val block = secondArg<suspend () -> Unit>()
+            block()
+        }
+        coEvery { projectDao.deleteProjectsExcept(any()) } returns Unit
+        coEvery { projectDao.getProject("p1") } returns ProjectEntity("p1", "Old", "Old", "cat1", lastUpdated = 100L)
+        coEvery { categoryDao.getCategory("cat1") } returns CategoryEntity("cat1", "Old Cat", "Old Desc", lastUpdated = 100L)
+        coEvery { categoryDao.upsertCategory(any()) } returns Unit
+        coEvery { projectDao.upsertProject(any()) } returns Unit
+        coEvery { taskDao.deleteTasksForProjectExcept(any(), any()) } returns Unit
+        coEvery { taskDao.getTask("t1") } returns null
+        coEvery { taskDao.upsertTask(any()) } returns Unit
+
+        val result = localDataSource.syncProjects(remoteProjects)
+
+        assertTrue(result.isSuccess)
+        coVerify { projectDao.deleteProjectsExcept(listOf("p1")) }
+        coVerify { categoryDao.upsertCategory(any()) }
+        coVerify { projectDao.upsertProject(any()) }
+        coVerify { taskDao.upsertTask(any()) }
     }
 }

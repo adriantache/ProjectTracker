@@ -9,8 +9,11 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -24,7 +27,14 @@ class ProjectsRepositoryTest {
 
     @Before
     fun setup() {
+        mockkStatic("android.util.Log")
+        every { android.util.Log.e(any(), any(), any()) } returns 0
         repository = ProjectsRepository(localDataSource, remoteDataSource)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic("android.util.Log")
     }
 
     @Test
@@ -66,21 +76,21 @@ class ProjectsRepositoryTest {
     @Test
     fun `saveProject saves to local then remote`() = runTest {
         val project = Project(name = "New Project", category = Category.All)
-        coEvery { localDataSource.saveProject(project, any()) } returns Result.success(Unit)
-        coEvery { remoteDataSource.saveProject(project, any()) } returns Result.success(Unit)
+        coEvery { localDataSource.saveProject(any(), any()) } returns Result.success(Unit)
+        coEvery { remoteDataSource.saveProject(any(), any()) } returns Result.success(Unit)
 
         val result = repository.saveProject(project)
 
         assertTrue(result.isSuccess)
-        coVerify(exactly = 1) { localDataSource.saveProject(project, any()) }
-        coVerify(exactly = 1) { remoteDataSource.saveProject(project, any()) }
+        coVerify(exactly = 1) { localDataSource.saveProject(eq(project), any()) }
+        coVerify(exactly = 1) { remoteDataSource.saveProject(eq(project), any()) }
     }
 
     @Test
     fun `saveProject returns failure when local fails`() = runTest {
         val project = Project(name = "New Project", category = Category.All)
         val exception = Exception("Local error")
-        coEvery { localDataSource.saveProject(project, any()) } returns Result.failure(exception)
+        coEvery { localDataSource.saveProject(any(), any()) } returns Result.failure(exception)
 
         val result = repository.saveProject(project)
 
@@ -113,5 +123,33 @@ class ProjectsRepositoryTest {
         assertTrue(result.isFailure)
         assertEquals(exception, result.exceptionOrNull())
         coVerify(exactly = 0) { remoteDataSource.deleteProject(any()) }
+    }
+
+    @Test
+    fun `completeProject calls localDataSource completeProject and remote saveProject`() = runTest {
+        val projectId = "p1"
+        val updatedProject = Project(id = "p1", name = "Updated", category = Category.All)
+        coEvery { localDataSource.completeProject(any(), any()) } returns Result.success(updatedProject)
+        coEvery { remoteDataSource.saveProject(any(), any()) } returns Result.success(Unit)
+
+        val result = repository.completeProject(projectId)
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { localDataSource.completeProject(eq(projectId), any()) }
+        coVerify(exactly = 1) { remoteDataSource.saveProject(eq(updatedProject), any()) }
+    }
+
+    @Test
+    fun `toggleFavorite calls localDataSource toggleFavorite and remote saveProject`() = runTest {
+        val projectId = "p1"
+        val updatedProject = Project(id = "p1", name = "Updated", category = Category.All)
+        coEvery { localDataSource.toggleFavorite(any()) } returns Result.success(updatedProject)
+        coEvery { remoteDataSource.saveProject(any(), any()) } returns Result.success(Unit)
+
+        val result = repository.toggleFavorite(projectId)
+
+        assertTrue(result.isSuccess)
+        coVerify(exactly = 1) { localDataSource.toggleFavorite(eq(projectId)) }
+        coVerify(exactly = 1) { remoteDataSource.saveProject(eq(updatedProject), any()) }
     }
 }
