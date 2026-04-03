@@ -1,6 +1,5 @@
 package com.adriantache.projecttracker.domain
 
-import android.util.Log
 import com.adriantache.projecttracker.domain.data.ProjectsRepositoryInterface
 import com.adriantache.projecttracker.domain.entity.Category
 import com.adriantache.projecttracker.domain.entity.Project
@@ -39,14 +38,12 @@ class CategoriesUseCase @Inject constructor(
         get() = projects.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
 
     private fun onInit() {
-        Log.d("CategoriesUseCase", "onInit triggered")
         state.value = Loading
 
         // Start collecting database changes reactively
         projectsJob?.cancel()
         projectsJob = repository.getProjectsFlow()
             .onEach { newList ->
-                Log.d("CategoriesUseCase", "Database emission: ${newList.size} projects")
                 projects = newList
 
                 // Update UI state based on new data
@@ -59,15 +56,11 @@ class CategoriesUseCase @Inject constructor(
             try {
                 withTimeoutOrNull(10_000) {
                     repository.fetchProjects()
-                        .onFailure {
-                            Log.e("CategoriesUseCase", "Initial remote refresh failed", it)
-                        }
-                } ?: Log.w("CategoriesUseCase", "Initial remote refresh timed out")
+                }
             } finally {
                 // Always ensure we transition out of loading after some time if no data came from DB
                 delay(500) // Give a moment for the DB emission to trigger updateStateWithNewData
                 if (state.value is Loading) {
-                    Log.d("CategoriesUseCase", "Forcing transition from Loading to DashboardView")
                     showDashboard()
                 }
             }

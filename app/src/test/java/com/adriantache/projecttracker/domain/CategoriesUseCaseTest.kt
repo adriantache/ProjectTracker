@@ -9,8 +9,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -36,18 +34,12 @@ class CategoriesUseCaseTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        mockkStatic("android.util.Log")
-        every { android.util.Log.d(any<String>(), any<String>()) } returns 0
-        every { android.util.Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { android.util.Log.w(any<String>(), any<String>()) } returns 0
-
         useCase = CategoriesUseCase(repository, testScope)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
-        unmockkStatic("android.util.Log")
     }
 
     @Test
