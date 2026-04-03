@@ -16,6 +16,8 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 
+val appVersion = "1.00.00"
+
 android {
     namespace = "com.adriantache.projecttracker"
     compileSdk = 36
@@ -24,8 +26,8 @@ android {
         applicationId = "com.adriantache.projecttracker"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersion.replace(".", "").toInt()
+        versionName = appVersion
 
         testInstrumentationRunner = "com.adriantache.projecttracker.CustomTestRunner"
     }
