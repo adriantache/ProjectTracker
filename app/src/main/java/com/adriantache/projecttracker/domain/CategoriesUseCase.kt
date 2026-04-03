@@ -277,7 +277,7 @@ class CategoriesUseCase @Inject constructor(
     private fun onEditTask(project: Project, taskId: String, title: String, description: String) {
         scope.launch {
             val task = project.tasks[taskId] ?: return@launch
-            val updatedTask = task.copy(title = title, description = description)
+            val updatedTask = task.setTitle(title).setDescription(description)
             val updatedProject = project.copy(tasks = project.tasks + (taskId to updatedTask))
             repository.saveProject(updatedProject)
         }
