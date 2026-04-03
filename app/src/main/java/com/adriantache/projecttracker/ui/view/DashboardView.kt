@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -44,7 +45,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,6 +87,7 @@ fun DashboardView(
     onToggleFavorite: (String) -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var selectedStatInfo by remember { mutableStateOf<StatCardInfo?>(null) }
 
     val currentOnRefresh by rememberUpdatedState(onRefresh)
     LaunchedEffect(Unit) {
@@ -128,7 +133,16 @@ fun DashboardView(
                         title = "Active Projects",
                         value = pendingProjectsCount.toString(),
                         icon = Icons.AutoMirrored.Filled.FormatListBulleted,
-                        color = AccentTeal
+                        color = AccentTeal,
+                        onClick = {
+                            selectedStatInfo = StatCardInfo(
+                                title = "Active Projects",
+                                value = pendingProjectsCount.toString(),
+                                detail = "You currently have $pendingProjectsCount projects in progress. Check the Categories section below to see them grouped by category.",
+                                icon = Icons.AutoMirrored.Filled.FormatListBulleted,
+                                color = AccentTeal
+                            )
+                        },
                     )
 
                     StatCard(
@@ -138,7 +152,16 @@ fun DashboardView(
                         title = "Completed Projects",
                         value = completedProjectsCount.toString(),
                         icon = Icons.Default.CheckCircle,
-                        color = Color(0xFF4CAF50)
+                        color = Color(0xFF4CAF50),
+                        onClick = {
+                            selectedStatInfo = StatCardInfo(
+                                title = "Completed Projects",
+                                value = completedProjectsCount.toString(),
+                                detail = "Great job! You have successfully finished $completedProjectsCount projects so far. Keep it up!",
+                                icon = Icons.Default.CheckCircle,
+                                color = Color(0xFF4CAF50)
+                            )
+                        },
                     )
 
                     StatCard(
@@ -149,7 +172,16 @@ fun DashboardView(
                         value = projectsCompletedThisWeek.toString(),
                         subtitle = "Completed this week",
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
-                        color = Color(0xFFFF9800)
+                        color = Color(0xFFFF9800),
+                        onClick = {
+                            selectedStatInfo = StatCardInfo(
+                                title = "Recently Completed",
+                                value = projectsCompletedThisWeek.toString(),
+                                detail = "In the last 7 days, you have completed $projectsCompletedThisWeek projects. Your productivity is on the rise!",
+                                icon = Icons.AutoMirrored.Filled.TrendingUp,
+                                color = Color(0xFFFF9800)
+                            )
+                        },
                     )
 
                     StatCard(
@@ -159,7 +191,17 @@ fun DashboardView(
                         title = "Total Tasks",
                         value = totalTasksCount.toString(),
                         icon = Icons.Default.AssignmentTurnedIn,
-                        color = Color(0xFF2196F3)
+                        color = Color(0xFF2196F3),
+                        onClick = {
+                            val pending = totalTasksCount - completedTasksCount
+                            selectedStatInfo = StatCardInfo(
+                                title = "Total Tasks",
+                                value = totalTasksCount.toString(),
+                                detail = "You have $totalTasksCount tasks in total across all projects.\n\n• Completed: $completedTasksCount\n• Pending: $pending",
+                                icon = Icons.Default.AssignmentTurnedIn,
+                                color = Color(0xFF2196F3)
+                            )
+                        },
                     )
 
                     StatCard(
@@ -169,7 +211,17 @@ fun DashboardView(
                         title = "Completed Tasks",
                         value = completedTasksCount.toString(),
                         icon = Icons.Default.History,
-                        color = Color(0xFF9C27B0)
+                        color = Color(0xFF9C27B0),
+                        onClick = {
+                            val rate = if (totalTasksCount > 0) (completedTasksCount * 100) / totalTasksCount else 0
+                            selectedStatInfo = StatCardInfo(
+                                title = "Completed Tasks",
+                                value = completedTasksCount.toString(),
+                                detail = "You have finished $completedTasksCount tasks! This represents a $rate% completion rate across all your tracked activities.",
+                                icon = Icons.Default.History,
+                                color = Color(0xFF9C27B0)
+                            )
+                        },
                     )
 
                     StatCard(
@@ -180,7 +232,21 @@ fun DashboardView(
                         value = tasksCompletedThisWeek.toString(),
                         subtitle = "Completed this week",
                         icon = Icons.Default.Speed,
-                        color = Color(0xFFE91E63)
+                        color = Color(0xFFE91E63),
+                        onClick = {
+                            val average = tasksCompletedThisWeek / 7f
+                            selectedStatInfo = StatCardInfo(
+                                title = "Task Pace",
+                                value = tasksCompletedThisWeek.toString(),
+                                detail = "You completed $tasksCompletedThisWeek tasks this week. That's an average of ${
+                                    "%.1f".format(
+                                        average
+                                    )
+                                } tasks per day!",
+                                icon = Icons.Default.Speed,
+                                color = Color(0xFFE91E63)
+                            )
+                        },
                     )
                 }
             }
@@ -244,6 +310,77 @@ fun DashboardView(
             }
         }
     }
+
+    // Detail Dialog
+    selectedStatInfo?.let { info ->
+        StatDetailDialog(
+            info = info,
+            onDismiss = { selectedStatInfo = null }
+        )
+    }
+}
+
+data class StatCardInfo(
+    val title: String,
+    val value: String,
+    val detail: String,
+    val icon: ImageVector,
+    val color: Color,
+)
+
+@Composable
+fun StatDetailDialog(
+    info: StatCardInfo,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BackgroundDark,
+        titleContentColor = Color.White,
+        textContentColor = Color.White.copy(alpha = 0.8f),
+        icon = {
+            Icon(
+                imageVector = info.icon,
+                contentDescription = null,
+                tint = info.color,
+                modifier = Modifier.size(48.dp)
+            )
+        },
+        title = {
+            Text(
+                text = info.title,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = info.value,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = info.color
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = info.detail,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    lineHeight = 20.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = AccentTeal)
+            }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }
 
 @Composable
@@ -254,13 +391,18 @@ fun StatCard(
     subtitle: String? = null,
     icon: ImageVector,
     color: Color,
+    onClick: (() -> Unit)? = null,
 ) {
+    val shape = RoundedCornerShape(16.dp)
     Card(
-        modifier = modifier.height(110.dp),
+        modifier = modifier
+            .height(110.dp)
+            .clip(shape)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         colors = CardDefaults.cardColors(
             containerColor = SecondaryGray.copy(alpha = 0.1f)
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
