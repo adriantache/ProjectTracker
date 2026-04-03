@@ -135,9 +135,8 @@ class CategoriesUseCase @Inject constructor(
 
     private fun onRefreshDashboard() {
         scope.launch {
-            state.value = Loading
             repository.fetchProjects()
-            if (state.value is Loading) showDashboard()
+            showDashboard()
         }
     }
 
