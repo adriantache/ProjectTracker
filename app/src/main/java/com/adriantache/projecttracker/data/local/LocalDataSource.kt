@@ -39,6 +39,25 @@ class LocalDataSource @Inject constructor(
         }
     }
 
+    suspend fun saveProjects(projects: List<Project>, timestamp: Long): Result<Unit> = runCatching {
+        database.withTransaction {
+            projects.forEach { project ->
+                val newCategory = project.category.toEntity(timestamp)
+                categoryDao.upsertCategory(newCategory)
+
+                projectDao.upsertProject(project.toEntity(timestamp))
+
+                // Reconcile tasks for this project
+                val taskIds = project.tasks.keys.toList()
+                taskDao.deleteTasksForProjectExcept(project.id, taskIds)
+
+                project.tasks.values.forEach { task ->
+                    taskDao.upsertTask(task.toEntity(project.id, timestamp))
+                }
+            }
+        }
+    }
+
     suspend fun completeProject(projectId: String, completionTimestamp: Long): Result<Project> = runCatching {
         database.withTransaction {
             val projectWithTasks = projectDao.getProjectWithTasks(projectId) ?: throw Exception("Project not found")

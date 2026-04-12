@@ -1,5 +1,6 @@
 package com.adriantache.projecttracker.ui.view
 
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -7,7 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -22,7 +24,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.adriantache.projecttracker.domain.entity.Category
@@ -41,12 +45,16 @@ fun CategoriesView(
     onCategoryClick: (String) -> Unit,
     onEditCategory: (String, String, String) -> Unit,
     onDeleteCategory: (String) -> Unit,
+    onMoveCategory: (fromIndex: Int, toIndex: Int) -> Unit,
     onBackClick: () -> Unit,
     onRefresh: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var showAddDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<CategoryUi?>(null) }
+
+    val gridState = rememberLazyGridState()
+    var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
 
     Scaffold(
         modifier = modifier
@@ -78,6 +86,7 @@ fun CategoriesView(
         }
     ) { paddingValues ->
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Adaptive(200.dp),
             modifier = Modifier
                 .fillMaxSize()
@@ -86,21 +95,46 @@ fun CategoriesView(
                 start = 48.dp,
                 top = 24.dp,
                 end = 48.dp,
-                bottom = 88.dp // Avoid FAB but allow scrolling items left of it
+                bottom = 88.dp
             ),
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            items(categories) { category ->
+            itemsIndexed(categories, key = { _, category -> category.id }) { index, category ->
                 ItemCard(
                     id = category.id,
                     title = category.name,
                     description = category.description,
                     footerText = category.numProjects.toString(),
-                    index = categories.indexOf(category),
+                    index = index,
                     onClick = onCategoryClick,
                     onDelete = onDeleteCategory,
                     onEdit = { editingCategory = category },
+                    modifier = Modifier.pointerInput(categories) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = { draggedItemIndex = index },
+                            onDragEnd = { draggedItemIndex = null },
+                            onDragCancel = { draggedItemIndex = null },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val itemInfo = gridState.layoutInfo.visibleItemsInfo.find { it.index == index }
+                                    ?: return@detectDragGesturesAfterLongPress
+                                val fingerPosInGrid = Offset(itemInfo.offset.x + change.position.x, itemInfo.offset.y + change.position.y)
+
+                                val targetItem = gridState.layoutInfo.visibleItemsInfo.find { item ->
+                                    fingerPosInGrid.x in item.offset.x.toFloat()..(item.offset.x.toFloat() + item.size.width) &&
+                                            fingerPosInGrid.y in item.offset.y.toFloat()..(item.offset.y.toFloat() + item.size.height)
+                                }
+
+                                targetItem?.let {
+                                    if (it.index != draggedItemIndex && it.index in categories.indices) {
+                                        onMoveCategory(draggedItemIndex!!, it.index)
+                                        draggedItemIndex = it.index
+                                    }
+                                }
+                            }
+                        )
+                    }
                 )
             }
         }
@@ -151,6 +185,7 @@ fun CategoriesViewPreview() {
             onCategoryClick = {},
             onEditCategory = { _, _, _ -> },
             onDeleteCategory = {},
+            onMoveCategory = { _, _ -> },
             onBackClick = {},
             onRefresh = {},
         )

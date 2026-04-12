@@ -27,6 +27,7 @@ data class ProjectEntity(
     val lastUpdated: Long = 0L,
     val isFavorite: Boolean = false,
     val completionTimestamp: Long? = null,
+    val sortOrder: Int = 0,
 )
 
 data class ProjectWithTasks(

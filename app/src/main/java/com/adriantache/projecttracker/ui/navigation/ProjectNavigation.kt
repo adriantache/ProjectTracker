@@ -130,6 +130,7 @@ fun ProjectNavigation(
                         onDeleteCategory = { categoryId ->
                             currentState.onDeleteCategory(categoryId)
                         },
+                        onMoveCategory = currentState.onMoveCategory,
                         onBackClick = {
                             currentState.onBack()
                             navController.popBackStack()
@@ -204,6 +205,7 @@ fun ProjectNavigation(
                         onDeleteProject = { projectId ->
                             currentState.onDeleteProject(projectId)
                         },
+                        onMoveProject = currentState.onMoveProject,
                         onToggleFavorite = { projectId: String ->
                             currentState.onToggleFavorite(projectId)
                         },

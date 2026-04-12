@@ -32,8 +32,9 @@ class RemoteDataSource @Inject constructor(
     }
 
     suspend fun getProjectsWithTimestamps(): Result<List<Pair<Project, Long>>> = runCatching {
-        userProjectsRef.get().await().children.mapNotNull { snapshot ->
-            val remoteProject = snapshot.getValue(RemoteProject::class.java)
+        val snapshot = userProjectsRef.get().await()
+        snapshot.children.mapNotNull { child ->
+            val remoteProject = child.getValue(RemoteProject::class.java)
             remoteProject?.let {
                 val timestampLong = try {
                     ZonedDateTime.parse(it.timestamp).toInstant().toEpochMilli()
@@ -50,17 +51,36 @@ class RemoteDataSource @Inject constructor(
             .atZone(ZoneId.systemDefault())
             .format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
 
-        val remoteProject = RemoteProject(
-            id = newProject.id,
-            name = newProject.name,
-            description = newProject.description,
+        val remoteProject = newProject.toRemote(isoTimestamp)
+        userProjectsRef.child(newProject.id).setValue(remoteProject).await()
+    }
+
+    suspend fun saveProjects(projects: List<Project>, lastUpdated: Long): Result<Unit> = runCatching {
+        val isoTimestamp = Instant.ofEpochMilli(lastUpdated)
+            .atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ISO_ZONED_DATE_TIME)
+
+        val updates = projects.associate { it.id to it.toRemote(isoTimestamp) }
+        userProjectsRef.updateChildren(updates).await()
+    }
+
+    suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
+        userProjectsRef.child(projectId).removeValue().await()
+    }
+
+    private fun Project.toRemote(isoTimestamp: String): RemoteProject {
+        return RemoteProject(
+            id = id,
+            name = name,
+            description = description,
             category = RemoteCategory(
-                id = newProject.category.id,
-                name = newProject.category.name,
-                description = newProject.category.description,
-                timestamp = isoTimestamp
+                id = category.id,
+                name = category.name,
+                description = category.description,
+                timestamp = isoTimestamp,
+                sortOrder = category.sortOrder
             ),
-            tasks = newProject.tasks.mapValues { (_, task) ->
+            tasks = tasks.mapValues { (_, task) ->
                 RemoteTask(
                     id = task.id,
                     title = task.title,
@@ -71,14 +91,10 @@ class RemoteDataSource @Inject constructor(
                 )
             },
             timestamp = isoTimestamp,
-            isFavorite = newProject.isFavorite,
-            completionTimestamp = newProject.completionTimestamp
+            isFavorite = isFavorite,
+            completionTimestamp = completionTimestamp,
+            sortOrder = sortOrder
         )
-        userProjectsRef.child(newProject.id).setValue(remoteProject).await()
-    }
-
-    suspend fun deleteProject(projectId: String): Result<Unit> = runCatching {
-        userProjectsRef.child(projectId).removeValue().await()
     }
 
     private fun RemoteProject.toProject(): Project {
@@ -86,7 +102,12 @@ class RemoteDataSource @Inject constructor(
             id = id,
             name = name,
             description = description,
-            category = Category(id = category.id, name = category.name, description = category.description),
+            category = Category(
+                id = category.id,
+                name = category.name,
+                description = category.description,
+                sortOrder = category.sortOrder
+            ),
             tasks = tasks.mapValues { (_, task) ->
                 Task(
                     id = task.id,
@@ -102,7 +123,8 @@ class RemoteDataSource @Inject constructor(
                 )
             },
             isFavorite = isFavorite,
-            completionTimestamp = completionTimestamp
+            completionTimestamp = completionTimestamp,
+            sortOrder = sortOrder
         )
     }
 }

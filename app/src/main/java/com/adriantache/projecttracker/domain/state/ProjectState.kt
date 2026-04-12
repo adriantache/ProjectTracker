@@ -32,6 +32,7 @@ sealed interface ProjectState {
         val onProjectSelected: (String) -> Unit,
         val onEditCategory: (String, String, String) -> Unit,
         val onDeleteCategory: (String) -> Unit,
+        val onMoveCategory: (fromIndex: Int, toIndex: Int) -> Unit,
         val onRefresh: () -> Unit,
         val onAddProject: (Project) -> Unit,
         val onBack: () -> Unit,
@@ -46,6 +47,7 @@ sealed interface ProjectState {
         val onEditProject: (String, String, String, Category) -> Unit,
         val onAddProject: (Project) -> Unit,
         val onDeleteProject: (String) -> Unit,
+        val onMoveProject: (fromIndex: Int, toIndex: Int) -> Unit,
         val onBack: () -> Unit,
         val onRefresh: () -> Unit,
         val onToggleFavorite: (String) -> Unit,
@@ -65,5 +67,5 @@ sealed interface ProjectState {
         val onToggleFavorite: (String) -> Unit,
     ) : ProjectState
 
-    data class Error(val message: String) : ProjectState
+    data class Error(val message: String, val onBack: () -> Unit) : ProjectState
 }

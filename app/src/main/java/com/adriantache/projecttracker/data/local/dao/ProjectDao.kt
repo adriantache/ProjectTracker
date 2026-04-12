@@ -34,7 +34,7 @@ interface ProjectDao {
     suspend fun getProjectWithTasks(projectId: String): ProjectWithTasks?
 
     @Transaction
-    @Query("SELECT * FROM projects")
+    @Query("SELECT * FROM projects ORDER BY sortOrder ASC")
     fun getProjectsWithTasksFlow(): Flow<List<ProjectWithTasks>>
 
     @Query("DELETE FROM projects WHERE id = :projectId")

@@ -3,6 +3,7 @@ package com.adriantache.projecttracker.ui.view
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -66,6 +69,7 @@ fun ProjectsView(
     onProjectClick: (String) -> Unit,
     onEditProject: (String, String, String, Category) -> Unit,
     onDeleteProject: (String) -> Unit,
+    onMoveProject: (fromIndex: Int, toIndex: Int) -> Unit,
     onToggleFavorite: (String) -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -76,6 +80,7 @@ fun ProjectsView(
     var isCompletedExpanded by remember { mutableStateOf(false) }
 
     val gridState = rememberLazyGridState()
+    var draggedItemIndex by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(isCompletedExpanded) {
         if (isCompletedExpanded) {
@@ -132,7 +137,7 @@ fun ProjectsView(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                itemsIndexed(projects) { index, project ->
+                itemsIndexed(projects, key = { _, project -> project.id }) { index, project ->
                     ItemCard(
                         id = project.id,
                         title = project.name,
@@ -143,7 +148,33 @@ fun ProjectsView(
                         onDelete = onDeleteProject,
                         onEdit = { editingProject = project },
                         isFavorite = project.isFavorite,
-                        onToggleFavorite = onToggleFavorite
+                        onToggleFavorite = onToggleFavorite,
+                        modifier = Modifier.pointerInput(projects) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { draggedItemIndex = index },
+                                onDragEnd = { draggedItemIndex = null },
+                                onDragCancel = { draggedItemIndex = null },
+                                onDrag = { change, _ ->
+                                    change.consume()
+                                    val itemInfo = gridState.layoutInfo.visibleItemsInfo.find { it.index == index }
+                                        ?: return@detectDragGesturesAfterLongPress
+                                    val fingerPosInGrid =
+                                        Offset(itemInfo.offset.x + change.position.x, itemInfo.offset.y + change.position.y)
+
+                                    val targetItem = gridState.layoutInfo.visibleItemsInfo.find { item ->
+                                        fingerPosInGrid.x in item.offset.x.toFloat()..(item.offset.x.toFloat() + item.size.width) &&
+                                                fingerPosInGrid.y in item.offset.y.toFloat()..(item.offset.y.toFloat() + item.size.height)
+                                    }
+
+                                    targetItem?.let {
+                                        if (it.index != draggedItemIndex && it.index in projects.indices) {
+                                            onMoveProject(draggedItemIndex!!, it.index)
+                                            draggedItemIndex = it.index
+                                        }
+                                    }
+                                }
+                            )
+                        }
                     )
                 }
 
@@ -278,6 +309,7 @@ fun ProjectsViewPreview() {
             onProjectClick = {},
             onEditProject = { _, _, _, _ -> },
             onDeleteProject = {},
+            onMoveProject = { _, _ -> },
             onToggleFavorite = {},
             onRefresh = {},
             completedProjects = sampleProjects.filter { it.isCompleted },

@@ -35,6 +35,12 @@ class ProjectsRepository @Inject constructor(
             }
     }
 
+    override suspend fun saveProjects(projects: List<Project>): Result<Unit> = runCatching {
+        val timestamp = System.currentTimeMillis()
+        localDataSource.saveProjects(projects, timestamp).getOrThrow()
+        remoteDataSource.saveProjects(projects, timestamp).getOrThrow()
+    }
+
     override suspend fun completeProject(projectId: String): Result<Unit> {
         val completionTimestamp = System.currentTimeMillis()
         return localDataSource.completeProject(projectId, completionTimestamp)

@@ -11,7 +11,7 @@ import com.adriantache.projecttracker.data.local.entity.CategoryEntity
 import com.adriantache.projecttracker.data.local.entity.ProjectEntity
 import com.adriantache.projecttracker.data.local.entity.TaskEntity
 
-@Database(entities = [ProjectEntity::class, CategoryEntity::class, TaskEntity::class], version = 7)
+@Database(entities = [ProjectEntity::class, CategoryEntity::class, TaskEntity::class], version = 8)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun categoryDao(): CategoryDao

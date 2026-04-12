@@ -21,4 +21,6 @@ data class RemoteProject(
     val isFavorite: Boolean = false,
     @get:PropertyName("completionTimestamp")
     val completionTimestamp: Long? = null,
+    @get:PropertyName("sortOrder")
+    val sortOrder: Int = 0,
 )

@@ -18,6 +18,7 @@ fun Project.toEntity(lastUpdated: Long = System.currentTimeMillis()) = ProjectEn
     lastUpdated = lastUpdated,
     isFavorite = isFavorite,
     completionTimestamp = completionTimestamp,
+    sortOrder = sortOrder,
 )
 
 fun Category.toEntity(lastUpdated: Long = System.currentTimeMillis()) = CategoryEntity(
@@ -25,12 +26,14 @@ fun Category.toEntity(lastUpdated: Long = System.currentTimeMillis()) = Category
     name = name,
     description = description,
     lastUpdated = lastUpdated,
+    sortOrder = sortOrder,
 )
 
 fun CategoryEntity.toCategory() = Category(
     id = id,
     name = name,
     description = description,
+    sortOrder = sortOrder,
 )
 
 fun ProjectWithTasks.toProject() = Project(
@@ -41,6 +44,7 @@ fun ProjectWithTasks.toProject() = Project(
     tasks = tasks.map { it.toTask() }.associateBy { it.id },
     isFavorite = project.isFavorite,
     completionTimestamp = project.completionTimestamp,
+    sortOrder = project.sortOrder,
 )
 
 fun Task.toEntity(projectId: String, lastUpdated: Long = System.currentTimeMillis()) = TaskEntity(

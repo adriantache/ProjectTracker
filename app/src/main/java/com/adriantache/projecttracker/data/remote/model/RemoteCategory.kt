@@ -13,4 +13,6 @@ data class RemoteCategory(
     val description: String = "",
     @get:PropertyName("timestamp")
     val timestamp: String = "",
+    @get:PropertyName("sortOrder")
+    val sortOrder: Int = 0,
 )

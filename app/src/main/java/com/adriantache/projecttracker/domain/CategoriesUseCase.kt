@@ -34,8 +34,10 @@ class CategoriesUseCase @Inject constructor(
         field: MutableStateFlow<ProjectState> = MutableStateFlow(Init(::onInit))
 
     var projects = emptyList<Project>()
+
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: List<Category>
-        get() = projects.map { it.category }.distinctBy { it.id }.sortedBy { it.name }
+        get() = _categories.value
 
     private fun onInit() {
         state.value = Loading
@@ -45,6 +47,8 @@ class CategoriesUseCase @Inject constructor(
         projectsJob = repository.getProjectsFlow()
             .onEach { newList ->
                 projects = newList
+                val uniqueCategories = newList.map { it.category }.distinctBy { it.id }.sortedBy { it.sortOrder }
+                _categories.value = uniqueCategories
 
                 // Update UI state based on new data
                 updateStateWithNewData(newList = newList)
@@ -55,7 +59,9 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             try {
                 withTimeoutOrNull(10_000) {
-                    repository.fetchProjects()
+                    repository.fetchProjects().onFailure {
+                        handleError("Error fetching projects: ${it.message}")
+                    }
                 }
             } finally {
                 // Always ensure we transition out of loading after some time if no data came from DB
@@ -104,7 +110,7 @@ class CategoriesUseCase @Inject constructor(
 
     private fun showDashboard() {
         val pendingProjects = projects.filter { !it.isCompleted }
-            .sortedWith(compareByDescending<Project> { it.isFavorite }.thenBy { it.name })
+            .sortedWith(compareBy<Project> { it.sortOrder }.thenByDescending { it.isFavorite }.thenBy { it.name })
         val completedProjects = projects.filter { it.isCompleted }
 
         val oneWeekAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L
@@ -135,7 +141,9 @@ class CategoriesUseCase @Inject constructor(
 
     private fun onRefreshDashboard() {
         scope.launch {
-            repository.fetchProjects()
+            repository.fetchProjects().onFailure {
+                handleError("Error refreshing dashboard: ${it.message}")
+            }
             showDashboard()
         }
     }
@@ -151,6 +159,7 @@ class CategoriesUseCase @Inject constructor(
             onProjectSelected = ::onProjectSelected,
             onEditCategory = ::onEditCategory,
             onDeleteCategory = ::onDeleteCategory,
+            onMoveCategory = ::onMoveCategory,
             onRefresh = ::onRefreshCategories,
             onAddProject = ::onAddProject,
             onBack = ::showDashboard,
@@ -160,7 +169,9 @@ class CategoriesUseCase @Inject constructor(
     private fun onRefreshCategories() {
         scope.launch {
             state.value = Loading
-            repository.fetchProjects()
+            repository.fetchProjects().onFailure {
+                handleError("Error refreshing categories: ${it.message}")
+            }
             if (state.value is Loading) showCategories()
         }
     }
@@ -174,7 +185,7 @@ class CategoriesUseCase @Inject constructor(
             emptyList()
         }
         val pendingProjects = filteredProjects.filter { !it.isCompleted }
-            .sortedWith(compareByDescending<Project> { it.isFavorite }.thenBy { it.name })
+            .sortedWith(compareBy<Project> { it.sortOrder }.thenByDescending { it.isFavorite }.thenBy { it.name })
         val completedProjects = filteredProjects.filter { it.isCompleted }.sortedByDescending { it.completionTimestamp }
 
         state.value = ProjectsView(
@@ -186,11 +197,14 @@ class CategoriesUseCase @Inject constructor(
             onEditProject = ::onEditProject,
             onAddProject = ::onAddProject,
             onDeleteProject = ::onDeleteProject,
+            onMoveProject = { from, to -> onMoveProject(categoryId, from, to) },
             onBack = ::showCategories,
             onRefresh = {
                 scope.launch {
                     state.value = Loading
-                    repository.fetchProjects()
+                    repository.fetchProjects().onFailure {
+                        handleError("Error refreshing projects for category: ${it.message}")
+                    }
                     if (state.value is Loading) onCategorySelected(categoryId)
                 }
             },
@@ -228,13 +242,17 @@ class CategoriesUseCase @Inject constructor(
 
     private fun onToggleFavorite(projectId: String) {
         scope.launch {
-            repository.toggleFavorite(projectId)
+            repository.toggleFavorite(projectId).onFailure {
+                handleError("Error toggling favorite: ${it.message}")
+            }
         }
     }
 
     private fun onCompleteProject(projectId: String) {
         scope.launch {
-            repository.completeProject(projectId)
+            repository.completeProject(projectId).onFailure {
+                handleError("Error completing project: ${it.message}")
+            }
         }
     }
 
@@ -246,14 +264,18 @@ class CategoriesUseCase @Inject constructor(
                 tasks = project.tasks + (id to updatedTask),
                 completionTimestamp = if (!done) null else project.completionTimestamp
             )
-            repository.saveProject(newProject)
+            repository.saveProject(newProject).onFailure {
+                handleError("Error saving task status: ${it.message}")
+            }
         }
     }
 
     private fun onDeleteTask(project: Project, taskId: String) {
         scope.launch {
             val newProject = project.copy(tasks = project.tasks - taskId)
-            repository.saveProject(newProject)
+            repository.saveProject(newProject).onFailure {
+                handleError("Error deleting task: ${it.message}")
+            }
         }
     }
 
@@ -263,7 +285,9 @@ class CategoriesUseCase @Inject constructor(
                 tasks = project.tasks + (task.id to task),
                 completionTimestamp = null
             )
-            repository.saveProject(newProject)
+            repository.saveProject(newProject).onFailure {
+                handleError("Error adding task: ${it.message}")
+            }
         }
     }
 
@@ -272,14 +296,18 @@ class CategoriesUseCase @Inject constructor(
             val task = project.tasks[taskId] ?: return@launch
             val updatedTask = task.setTitle(title).setDescription(description)
             val updatedProject = project.copy(tasks = project.tasks + (taskId to updatedTask))
-            repository.saveProject(updatedProject)
+            repository.saveProject(updatedProject).onFailure {
+                handleError("Error editing task: ${it.message}")
+            }
         }
     }
 
     private fun onRefreshProject(projectId: String) {
         scope.launch {
             state.value = Loading
-            repository.fetchProjects()
+            repository.fetchProjects().onFailure {
+                handleError("Error refreshing project: ${it.message}")
+            }
             if (state.value is Loading) onProjectSelected(projectId)
         }
     }
@@ -288,7 +316,11 @@ class CategoriesUseCase @Inject constructor(
         state.value = Loading
         scope.launch {
             val projectsToDelete = projects.filter { it.category.id == categoryId }
-            projectsToDelete.forEach { repository.deleteProject(it.id) }
+            projectsToDelete.forEach {
+                repository.deleteProject(it.id).onFailure { e ->
+                    handleError("Error deleting projects for category: ${e.message}")
+                }
+            }
             if (state.value is Loading) showDashboard()
         }
     }
@@ -297,8 +329,58 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             val projectsToUpdate = projects.filter { it.category.id == categoryId }
             projectsToUpdate.forEach { project ->
-                val newCategory = project.category.copy(name = name, description = description)
-                repository.saveProject(project.copy(category = newCategory))
+                val newCategory = project.category.setName(name).setDescription(description)
+                repository.saveProject(project.setCategory(newCategory)).onFailure {
+                    handleError("Error editing category: ${it.message}")
+                }
+            }
+        }
+    }
+
+    private fun onMoveCategory(fromIndex: Int, toIndex: Int) {
+        val currentCategories = categories.toMutableList()
+        if (fromIndex !in currentCategories.indices || toIndex !in currentCategories.indices) return
+
+        val category = currentCategories.removeAt(fromIndex)
+        currentCategories.add(toIndex, category)
+
+        val updatedCategories = currentCategories.mapIndexed { index, cat ->
+            cat.setSortOrder(index)
+        }
+
+        scope.launch {
+            // Updating categories means updating all projects in those categories
+            val projectsToUpdate = projects.map { project ->
+                val updatedCategory = updatedCategories.find { it.id == project.category.id }
+                if (updatedCategory != null) {
+                    project.setCategory(updatedCategory)
+                } else {
+                    project
+                }
+            }
+            repository.saveProjects(projectsToUpdate).onFailure {
+                handleError("Error moving category: ${it.message}")
+            }
+        }
+    }
+
+    private fun onMoveProject(categoryId: String, fromIndex: Int, toIndex: Int) {
+        val filteredProjects = projects.filter { it.category.id == categoryId && !it.isCompleted }
+            .sortedWith(compareBy<Project> { it.sortOrder }.thenByDescending { it.isFavorite }.thenBy { it.name })
+            .toMutableList()
+
+        if (fromIndex !in filteredProjects.indices || toIndex !in filteredProjects.indices) return
+
+        val project = filteredProjects.removeAt(fromIndex)
+        filteredProjects.add(toIndex, project)
+
+        val updatedProjects = filteredProjects.mapIndexed { index, p ->
+            p.setSortOrder(index)
+        }
+
+        scope.launch {
+            repository.saveProjects(updatedProjects).onFailure {
+                handleError("Error moving project: ${it.message}")
             }
         }
     }
@@ -307,30 +389,41 @@ class CategoriesUseCase @Inject constructor(
         scope.launch {
             val existingCategory = categories.find { it.name.equals(project.category.name, ignoreCase = true) }
             val finalProject = if (existingCategory != null) {
-                project.copy(category = existingCategory)
+                project.setCategory(existingCategory)
             } else {
-                project
+                val nextSortOrder = (categories.maxOfOrNull { it.sortOrder } ?: -1) + 1
+                project.setCategory(project.category.setSortOrder(nextSortOrder))
             }
 
-            repository.saveProject(finalProject)
+            val nextProjectSortOrder =
+                (projects.filter { it.category.id == finalProject.category.id }.maxOfOrNull { it.sortOrder } ?: -1) + 1
+            val finalProjectWithSort = finalProject.setSortOrder(nextProjectSortOrder)
+
+            repository.saveProject(finalProjectWithSort).onFailure {
+                handleError("Error adding project: ${it.message}")
+            }
         }
     }
 
     private fun onEditProject(projectId: String, name: String, description: String, category: Category) {
         scope.launch {
             val project = projects.find { it.id == projectId } ?: return@launch
-            val updatedProject = project.copy(
-                name = name,
-                description = description,
-                category = category
-            )
-            repository.saveProject(updatedProject)
+            val updatedProject = project.setName(name).setDescription(description).setCategory(category)
+            repository.saveProject(updatedProject).onFailure {
+                handleError("Error editing project: ${it.message}")
+            }
         }
     }
 
     private fun onDeleteProject(projectId: String) {
         scope.launch {
-            repository.deleteProject(projectId)
+            repository.deleteProject(projectId).onFailure {
+                handleError("Error deleting project: ${it.message}")
+            }
         }
+    }
+
+    private fun handleError(message: String) {
+        state.value = ProjectState.Error(message) { showDashboard() }
     }
 }

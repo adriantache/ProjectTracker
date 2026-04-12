@@ -9,4 +9,5 @@ data class CategoryEntity(
     val name: String,
     val description: String,
     val lastUpdated: Long = 0L,
+    val sortOrder: Int = 0,
 )

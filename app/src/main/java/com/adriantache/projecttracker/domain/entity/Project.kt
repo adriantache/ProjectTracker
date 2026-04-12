@@ -10,6 +10,7 @@ data class Project(
     val tasks: Map<String, Task> = emptyMap(),
     val isFavorite: Boolean = false,
     val completionTimestamp: Long? = null,
+    val sortOrder: Int = 0,
 ) {
     val isValid = name.isNotBlank()
 
@@ -21,8 +22,10 @@ data class Project(
 
     fun setName(name: String) = this.copy(name = name)
     fun setDescription(description: String) = this.copy(description = description)
+    fun setCategory(category: Category) = this.copy(category = category)
     fun addTask(task: Task) = this.copy(tasks = this.tasks + task.toPair())
     fun removeTask(taskId: String) = this.copy(tasks = this.tasks.toMutableMap().apply { remove(taskId) })
+    fun setSortOrder(sortOrder: Int) = this.copy(sortOrder = sortOrder)
 
     fun toPair() = Pair(id, this)
 }
