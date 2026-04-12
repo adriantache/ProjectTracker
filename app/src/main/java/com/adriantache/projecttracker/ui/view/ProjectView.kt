@@ -12,16 +12,20 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,7 +42,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Circle
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,6 +58,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +72,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -76,6 +81,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -100,6 +106,7 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -123,7 +130,6 @@ fun ProjectView(
     var newTaskDescription by remember { mutableStateOf("") }
     var showEditProjectDialog by remember { mutableStateOf(false) }
     var editingTask by remember { mutableStateOf<TaskUi?>(null) }
-    var showCompleteConfirmation by remember { mutableStateOf(false) }
     var isPlayingAnimation by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -169,25 +175,12 @@ fun ProjectView(
 
                 if (project.canBeCompleted) {
                     item {
-                        Button(
-                            onClick = { showCompleteConfirmation = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AccentTeal,
-                                contentColor = BackgroundDark
-                            ),
-                            shape = RoundedCornerShape(16.dp),
-                            contentPadding = PaddingValues(16.dp)
-                        ) {
-                            Icon(imageVector = Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "MARK PROJECT AS COMPLETED",
-                                fontFamily = InterFamily,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                        }
+                        SwipeToComplete(
+                            onComplete = {
+                                isPlayingAnimation = true
+                                onCompleteProject()
+                            }
+                        )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
@@ -281,39 +274,6 @@ fun ProjectView(
             }
         }
 
-        if (showCompleteConfirmation) {
-            AlertDialog(
-                onDismissRequest = { showCompleteConfirmation = false },
-                title = { Text("Complete Project?", color = TextCream, fontFamily = PlayfairFamily) },
-                text = {
-                    Text(
-                        "Are you sure you want to mark this project as completed? It will be moved to the completed projects section.",
-                        color = TextMuted,
-                        fontFamily = InterFamily
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showCompleteConfirmation = false
-                            isPlayingAnimation = true
-                            onCompleteProject()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AccentTeal)
-                    ) {
-                        Text("CONFIRM", color = BackgroundDark)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCompleteConfirmation = false }) {
-                        Text("CANCEL", color = TextMuted)
-                    }
-                },
-                containerColor = CardDarkGrey,
-                shape = RoundedCornerShape(24.dp)
-            )
-        }
-
         if (showEditProjectDialog) {
             AddProjectDialog(
                 categories = allCategories,
@@ -336,6 +296,79 @@ fun ProjectView(
                 onConfirm = { title, description ->
                     onEditTask(task.id, title, description)
                 }
+            )
+        }
+    }
+}
+
+@Composable
+fun SwipeToComplete(
+    modifier: Modifier = Modifier,
+    onComplete: () -> Unit,
+) {
+    val trackHeight = 64.dp
+    val thumbSize = trackHeight - 8.dp
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(trackHeight)
+            .background(CardDarkGrey, RoundedCornerShape(trackHeight / 2))
+            .padding(4.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        val width = constraints.maxWidth.toFloat()
+        val density = LocalDensity.current
+        val thumbSizePx = with(density) { thumbSize.toPx() }
+        val paddingPx = with(density) { 4.dp.toPx() }
+        val maxOffset = width - thumbSizePx - (paddingPx * 2)
+
+        var offsetX by remember { mutableFloatStateOf(0f) }
+        val animatedOffset by animateFloatAsState(
+            targetValue = offsetX,
+            label = "SwipeOffset"
+        )
+
+        val progress = (offsetX / maxOffset).coerceIn(0f, 1f)
+
+        Text(
+            text = "SWIPE TO COMPLETE PROJECT",
+            fontFamily = InterFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            color = TextMuted.copy(alpha = 0.6f * (1f - progress)),
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 16.dp),
+            letterSpacing = 1.sp
+        )
+
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(animatedOffset.roundToInt(), 0) }
+                .size(thumbSize)
+                .background(AccentTeal, RoundedCornerShape(thumbSize / 2))
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        offsetX = (offsetX + delta).coerceIn(0f, maxOffset)
+                    },
+                    onDragStopped = {
+                        if (offsetX > maxOffset * 0.9f) {
+                            offsetX = maxOffset
+                            onComplete()
+                        } else {
+                            offsetX = 0f
+                        }
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = BackgroundDark,
+                modifier = Modifier.size(28.dp)
             )
         }
     }
