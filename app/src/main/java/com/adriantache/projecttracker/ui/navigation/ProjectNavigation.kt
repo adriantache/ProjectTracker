@@ -54,21 +54,7 @@ fun ProjectNavigation(
                 is ProjectState.Init, ProjectState.Loading -> LoadingView()
 
                 is ProjectState.DashboardView -> {
-                    DashboardView(
-                        pendingProjectsCount = currentState.pendingProjectsCount,
-                        completedProjectsCount = currentState.completedProjectsCount,
-                        projectsCompletedThisWeek = currentState.projectsCompletedThisWeek,
-                        totalTasksCount = currentState.totalTasksCount,
-                        completedTasksCount = currentState.completedTasksCount,
-                        tasksCompletedThisWeek = currentState.tasksCompletedThisWeek,
-                        recentProjects = currentState.recentProjects.map { it.toUi() },
-                        categories = currentState.categories,
-                        onProjectClick = currentState.onProjectSelected,
-                        onCategoryClick = currentState.onCategorySelected,
-                        onViewAllCategories = currentState.onViewAllCategories,
-                        onRefresh = currentState.onRefresh,
-                        onToggleFavorite = currentState.onToggleFavorite
-                    )
+                    DashboardView(state = currentState)
                 }
 
                 is ProjectState.Error -> ErrorView(currentState.message)

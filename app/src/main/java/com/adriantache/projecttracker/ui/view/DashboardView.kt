@@ -36,7 +36,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -62,7 +61,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adriantache.projecttracker.domain.entity.Category
+import com.adriantache.projecttracker.domain.entity.Project
+import com.adriantache.projecttracker.domain.state.ProjectState
 import com.adriantache.projecttracker.ui.model.ProjectUi
+import com.adriantache.projecttracker.ui.model.toUi
 import com.adriantache.projecttracker.ui.theme.AccentTeal
 import com.adriantache.projecttracker.ui.theme.BackgroundDark
 import com.adriantache.projecttracker.ui.theme.ProjectTrackerTheme
@@ -72,24 +74,12 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DashboardView(
-    pendingProjectsCount: Int,
-    completedProjectsCount: Int,
-    projectsCompletedThisWeek: Int,
-    totalTasksCount: Int,
-    completedTasksCount: Int,
-    tasksCompletedThisWeek: Int,
-    recentProjects: List<ProjectUi>,
-    categories: List<Category>,
-    onProjectClick: (String) -> Unit,
-    onCategoryClick: (String) -> Unit,
-    onViewAllCategories: () -> Unit,
-    onRefresh: () -> Unit,
-    onToggleFavorite: (String) -> Unit = {},
+    state: ProjectState.DashboardView,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     var selectedStatInfo by remember { mutableStateOf<StatCardInfo?>(null) }
 
-    val currentOnRefresh by rememberUpdatedState(onRefresh)
+    val currentOnRefresh by rememberUpdatedState(state.onRefresh)
     LaunchedEffect(Unit) {
         while (true) {
             delay(30000) // Refresh every 30 seconds
@@ -106,7 +96,7 @@ fun DashboardView(
             MainTopBar(
                 title = "Dashboard",
                 scrollBehavior = scrollBehavior,
-                onRefresh = onRefresh
+                onRefresh = state.onRefresh
             )
         }
     ) { paddingValues ->
@@ -131,14 +121,14 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Active Projects",
-                        value = pendingProjectsCount.toString(),
+                        value = state.pendingProjectsCount.toString(),
                         icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                         color = AccentTeal,
                         onClick = {
                             selectedStatInfo = StatCardInfo(
                                 title = "Active Projects",
-                                value = pendingProjectsCount.toString(),
-                                detail = "You currently have $pendingProjectsCount projects in progress. Check the Categories section below to see them grouped by category.",
+                                value = state.pendingProjectsCount.toString(),
+                                detail = "You currently have ${state.pendingProjectsCount} projects in progress. Check the Categories section below to see them grouped by category.",
                                 icon = Icons.AutoMirrored.Filled.FormatListBulleted,
                                 color = AccentTeal
                             )
@@ -150,14 +140,14 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Completed Projects",
-                        value = completedProjectsCount.toString(),
+                        value = state.completedProjectsCount.toString(),
                         icon = Icons.Default.CheckCircle,
                         color = Color(0xFF4CAF50),
                         onClick = {
                             selectedStatInfo = StatCardInfo(
                                 title = "Completed Projects",
-                                value = completedProjectsCount.toString(),
-                                detail = "Great job! You have successfully finished $completedProjectsCount projects so far. Keep it up!",
+                                value = state.completedProjectsCount.toString(),
+                                detail = "Great job! You have successfully finished ${state.completedProjectsCount} projects so far. Keep it up!",
                                 icon = Icons.Default.CheckCircle,
                                 color = Color(0xFF4CAF50)
                             )
@@ -169,15 +159,15 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Recent Projects",
-                        value = projectsCompletedThisWeek.toString(),
+                        value = state.projectsCompletedThisWeek.toString(),
                         subtitle = "Completed this week",
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
                         color = Color(0xFFFF9800),
                         onClick = {
                             selectedStatInfo = StatCardInfo(
                                 title = "Recently Completed",
-                                value = projectsCompletedThisWeek.toString(),
-                                detail = "In the last 7 days, you have completed $projectsCompletedThisWeek projects. Your productivity is on the rise!",
+                                value = state.projectsCompletedThisWeek.toString(),
+                                detail = "In the last 7 days, you have completed ${state.projectsCompletedThisWeek} projects. Your productivity is on the rise!",
                                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                                 color = Color(0xFFFF9800)
                             )
@@ -189,15 +179,15 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Total Tasks",
-                        value = totalTasksCount.toString(),
+                        value = state.totalTasksCount.toString(),
                         icon = Icons.Default.AssignmentTurnedIn,
                         color = Color(0xFF2196F3),
                         onClick = {
-                            val pending = totalTasksCount - completedTasksCount
+                            val pending = state.totalTasksCount - state.completedTasksCount
                             selectedStatInfo = StatCardInfo(
                                 title = "Total Tasks",
-                                value = totalTasksCount.toString(),
-                                detail = "You have $totalTasksCount tasks in total across all projects.\n\n• Completed: $completedTasksCount\n• Pending: $pending",
+                                value = state.totalTasksCount.toString(),
+                                detail = "You have ${state.totalTasksCount} tasks in total across all projects.\n\n• Completed: ${state.completedTasksCount}\n• Pending: $pending",
                                 icon = Icons.Default.AssignmentTurnedIn,
                                 color = Color(0xFF2196F3)
                             )
@@ -209,15 +199,15 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Completed Tasks",
-                        value = completedTasksCount.toString(),
+                        value = state.completedTasksCount.toString(),
                         icon = Icons.Default.History,
                         color = Color(0xFF9C27B0),
                         onClick = {
-                            val rate = if (totalTasksCount > 0) (completedTasksCount * 100) / totalTasksCount else 0
+                            val rate = if (state.totalTasksCount > 0) (state.completedTasksCount * 100) / state.totalTasksCount else 0
                             selectedStatInfo = StatCardInfo(
                                 title = "Completed Tasks",
-                                value = completedTasksCount.toString(),
-                                detail = "You have finished $completedTasksCount tasks! This represents a $rate% completion rate across all your tracked activities.",
+                                value = state.completedTasksCount.toString(),
+                                detail = "You have finished ${state.completedTasksCount} tasks! This represents a $rate% completion rate across all your tracked activities.",
                                 icon = Icons.Default.History,
                                 color = Color(0xFF9C27B0)
                             )
@@ -229,16 +219,16 @@ fun DashboardView(
                             .weight(1f)
                             .widthIn(min = 160.dp),
                         title = "Task Pace",
-                        value = tasksCompletedThisWeek.toString(),
+                        value = state.tasksCompletedThisWeek.toString(),
                         subtitle = "Completed this week",
                         icon = Icons.Default.Speed,
                         color = Color(0xFFE91E63),
                         onClick = {
-                            val average = tasksCompletedThisWeek / 7f
+                            val average = state.tasksCompletedThisWeek / 7f
                             selectedStatInfo = StatCardInfo(
                                 title = "Task Pace",
-                                value = tasksCompletedThisWeek.toString(),
-                                detail = "You completed $tasksCompletedThisWeek tasks this week. That's an average of ${
+                                value = state.tasksCompletedThisWeek.toString(),
+                                detail = "You completed ${state.tasksCompletedThisWeek} tasks this week. That's an average of ${
                                     "%.1f".format(
                                         average
                                     )
@@ -259,7 +249,7 @@ fun DashboardView(
                     onActionClick = null
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                if (recentProjects.isEmpty()) {
+                if (state.recentProjects.isEmpty()) {
                     Text(
                         "No active projects yet. Add one to get started!",
                         color = SecondaryGray,
@@ -268,11 +258,10 @@ fun DashboardView(
                 }
             }
 
-            items(recentProjects) { project ->
+            items(state.recentProjects) { project ->
                 RecentProjectItem(
-                    project = project,
-                    onClick = { onProjectClick(project.id) },
-                    onToggleFavorite = { onToggleFavorite(project.id) }
+                    project = project.toUi(),
+                    onClick = { state.onProjectSelected(project.id) },
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -284,13 +273,13 @@ fun DashboardView(
                 SectionHeader(
                     title = "Categories",
                     actionText = "View All",
-                    onActionClick = onViewAllCategories
+                    onActionClick = state.onViewAllCategories
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            items(categories.chunked(4)) { rowItems ->
+            items(state.categories.chunked(4)) { rowItems ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -299,7 +288,7 @@ fun DashboardView(
                         CategoryCard(
                             modifier = Modifier.weight(1f),
                             category = category,
-                            onClick = { onCategoryClick(category.id) }
+                            onClick = { state.onCategorySelected(category.id) }
                         )
                     }
                     repeat(4 - rowItems.size) {
@@ -496,7 +485,6 @@ fun SectionHeader(
 fun RecentProjectItem(
     project: ProjectUi,
     onClick: () -> Unit,
-    onToggleFavorite: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -527,13 +515,11 @@ fun RecentProjectItem(
                 )
             }
 
-            IconButton(onClick = onToggleFavorite) {
-                Icon(
-                    imageVector = if (project.isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
-                    contentDescription = "Toggle Favorite",
-                    tint = if (project.isFavorite) Color.Yellow else SecondaryGray
-                )
-            }
+            Icon(
+                imageVector = if (project.isFavorite) Icons.Default.Star else Icons.Default.StarOutline,
+                contentDescription = "Toggle Favorite",
+                tint = if (project.isFavorite) Color.Yellow else SecondaryGray
+            )
 
             Spacer(modifier = Modifier.width(8.dp))
 
@@ -584,38 +570,38 @@ fun CategoryCard(
 fun DashboardPreview() {
     ProjectTrackerTheme {
         DashboardView(
-            pendingProjectsCount = 4,
-            completedProjectsCount = 8,
-            projectsCompletedThisWeek = 2,
-            totalTasksCount = 45,
-            completedTasksCount = 38,
-            tasksCompletedThisWeek = 12,
-            recentProjects = listOf(
-                ProjectUi(
-                    id = "1",
-                    name = "Project Tracker App",
-                    description = "Mobile app development",
-                    category = Category(name = "Mobile", description = ""),
-                    tasksText = "3/5 tasks",
-                    tasks = emptyList(),
-                    progress = 0.6f,
-                    isCompleted = false,
-                    canBeCompleted = false,
-                    isFavorite = true,
-                )
-            ),
-            categories = listOf(
-                Category(id = "1", name = "Mobile", description = ""),
-                Category(id = "2", name = "Web", description = ""),
-                Category(id = "3", name = "Desktop", description = ""),
-                Category(id = "4", name = "Design", description = ""),
-                Category(id = "5", name = "Marketing", description = ""),
-                Category(id = "6", name = "Other", description = ""),
-            ),
-            onProjectClick = {},
-            onCategoryClick = {},
-            onViewAllCategories = {},
-            onRefresh = {}
+            state = ProjectState.DashboardView(
+                totalProjects = 12,
+                pendingProjectsCount = 4,
+                completedProjectsCount = 8,
+                projectsCompletedThisWeek = 2,
+                totalTasksCount = 45,
+                completedTasksCount = 38,
+                tasksCompletedThisWeek = 12,
+                recentProjects = listOf(
+                    Project(
+                        id = "1",
+                        name = "Project Tracker App",
+                        description = "Mobile app development",
+                        category = Category(name = "Mobile", description = ""),
+                        tasks = emptyMap(),
+                        isFavorite = true,
+                    )
+                ),
+                categories = listOf(
+                    Category(id = "1", name = "Mobile", description = ""),
+                    Category(id = "2", name = "Web", description = ""),
+                    Category(id = "3", name = "Desktop", description = ""),
+                    Category(id = "4", name = "Design", description = ""),
+                    Category(id = "5", name = "Marketing", description = ""),
+                    Category(id = "6", name = "Other", description = ""),
+                ),
+                onProjectSelected = {},
+                onCategorySelected = {},
+                onViewAllCategories = {},
+                onRefresh = {},
+                onToggleFavorite = {}
+            )
         )
     }
 }
